@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>3D Printing Software — Competitive Analysis Matrix v6</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f3;
+    --bg-tertiary: #eeede9;
+    --text-primary: #1a1a18;
+    --text-secondary: #6b6b67;
+    --text-tertiary: #9b9b97;
+    --border-tertiary: rgba(0,0,0,0.12);
+    --border-secondary: rgba(0,0,0,0.22);
+    --border-primary: rgba(0,0,0,0.35);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1c1c1a;
+      --bg-secondary: #252523;
+      --bg-tertiary: #2e2e2b;
+      --text-primary: #f0efe8;
+      --text-secondary: #9b9b97;
+      --text-tertiary: #6b6b67;
+      --border-tertiary: rgba(255,255,255,0.1);
+      --border-secondary: rgba(255,255,255,0.18);
+      --border-primary: rgba(255,255,255,0.28);
+    }
+  }
+  body { font-family: var(--font-sans); background: var(--bg-tertiary); color: var(--text-primary); padding: 2rem 1.5rem; min-height: 100vh; }
+  .page-header { margin-bottom: 1.75rem; }
+  .page-header h1 { font-size: 20px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px; }
+  .page-header p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+  .wrap { display: inline-block; min-width: 0; max-width: 100%; background: var(--bg-primary); border-radius: var(--radius-lg); border: 0.5px solid var(--border-tertiary); padding: 1.25rem; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1rem; align-items: center; }
+  .controls select, .controls input {
+    font-family: var(--font-sans); font-size: 13px; padding: 6px 10px;
+    border: 0.5px solid var(--border-secondary); border-radius: var(--radius-md);
+    background: var(--bg-primary); color: var(--text-primary);
+  }
+  .controls input { min-width: 160px; }
+  .stage-tabs { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab {
+    font-size: 12px; font-weight: 500; padding: 5px 12px;
+    border-radius: var(--radius-md); border: 0.5px solid var(--border-secondary);
+    background: var(--bg-secondary); color: var(--text-secondary);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab.active { background: var(--bg-primary); color: var(--text-primary); border-color: var(--border-primary); }
+  .attr-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; align-items: center; }
+  .attr-label { font-size: 11px; color: var(--text-tertiary); font-weight: 500; margin-right: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .attr-btn {
+    font-size: 11.5px; font-weight: 500; padding: 4px 11px;
+    border-radius: var(--radius-md); border: 0.5px solid var(--border-secondary);
+    background: var(--bg-secondary); color: var(--text-secondary);
+    cursor: pointer; font-family: var(--font-sans); outline: none; -webkit-appearance: none;
+  }
+  .attr-btn:hover { border-color: var(--border-primary); color: var(--text-primary); }
+  .attr-clear {
+    font-size: 11.5px; padding: 4px 11px; border-radius: var(--radius-md);
+    border: 0.5px solid var(--border-tertiary); background: transparent;
+    color: var(--text-tertiary); cursor: pointer; font-family: var(--font-sans);
+  }
+  .attr-clear:hover { color: var(--text-secondary); border-color: var(--border-secondary); }
+  .table-outer { display: inline-block; border: 0.5px solid var(--border-tertiary); border-radius: var(--radius-lg); overflow: hidden; max-width: 100%; overflow-x: auto; }
+  table { border-collapse: collapse; font-size: 12.5px; white-space: nowrap; }
+  thead th {
+    background: var(--bg-secondary); padding: 9px 10px; text-align: left;
+    font-weight: 500; font-size: 11px; color: var(--text-secondary);
+    border-bottom: 0.5px solid var(--border-tertiary);
+  }
+  thead th:first-child { position: sticky; left: 0; background: var(--bg-secondary); z-index: 2; }
+  thead th.crit-header { width: 88px; cursor: default; }
+  thead th.divider-left { border-left: 2px solid var(--border-secondary); }
+  thead th.col-hl { box-shadow: inset 0 3px 0 0 var(--text-secondary); }
+  tbody tr { border-bottom: 0.5px solid var(--border-tertiary); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover td { box-shadow: inset 0 1px 0 0 var(--border-secondary), inset 0 -1px 0 0 var(--border-secondary); }
+  tbody tr:hover td:first-child { box-shadow: inset 0 1px 0 0 var(--border-secondary), inset 0 -1px 0 0 var(--border-secondary); }
+  tbody td { padding: 8px 10px; color: var(--text-primary); vertical-align: middle; white-space: nowrap; }
+  tbody td:first-child { font-weight: 500; font-size: 12px; position: sticky; left: 0; background: var(--bg-primary); z-index: 1; }
+  tbody td.divider-left { border-left: 2px solid var(--border-secondary); }
+  tbody td.yes-hl { background: #eae9e2; }
+  tbody tr.row-hl td { background: #f5f4f0; }
+  tbody tr.row-hl td.yes-hl { background: #eae9e2; }
+  tbody tr.row-hl td:first-child { background: #f5f4f0; box-shadow: inset 3px 0 0 0 #6b6b67; color: #1a1a18; }
+  @media (prefers-color-scheme: dark) {
+    tbody td.yes-hl { background: #38382f; }
+    tbody tr.row-hl td { background: #2e2e2a; }
+    tbody tr.row-hl td.yes-hl { background: #38382f; }
+    tbody tr.row-hl td:first-child { background: #2e2e2a; box-shadow: inset 3px 0 0 0 #9b9b97; color: #f0efe8; }
+  }
+  .cat-badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: var(--radius-md); white-space: nowrap; }
+  .cat-slicer { background: #E6F1FB; color: #0C447C; }
+  .cat-cad    { background: #EAF3DE; color: #27500A; }
+  .cat-genai  { background: #FAEEDA; color: #633806; }
+  .cat-hub    { background: #EEEDFE; color: #3C3489; }
+  @media (prefers-color-scheme: dark) {
+    .cat-slicer { background: #0C447C; color: #B5D4F4; }
+    .cat-cad    { background: #27500A; color: #C0DD97; }
+    .cat-genai  { background: #633806; color: #FAC775; }
+    .cat-hub    { background: #3C3489; color: #CECBF6; }
+  }
+  .score { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: var(--radius-md); min-width: 52px; }
+  .score-yes     { background: #EAF3DE; color: #3B6D11; }
+  .score-partial { background: #FAEEDA; color: #854F0B; }
+  .score-no      { background: #FCEBEB; color: #A32D2D; }
+  @media (prefers-color-scheme: dark) {
+    .score-yes     { background: #173404; color: #C0DD97; }
+    .score-partial { background: #412402; color: #FAC775; }
+    .score-no      { background: #501313; color: #F7C1C1; }
+  }
+  .stage-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); padding: 5px 10px 3px; background: var(--bg-secondary); border-bottom: 0.5px solid var(--border-tertiary); }
+  .result-count { font-size: 12px; color: var(--text-secondary); margin-bottom: 0.75rem; }
+  .hidden-row { display: none; }
+  .th-inner { display: flex; flex-direction: column; gap: 2px; min-width: 76px; max-width: 90px; white-space: normal; line-height: 1.3; }
+  .th-id { font-size: 10px; color: var(--text-tertiary); font-weight: 400; }
+  .summary-bar { display: flex; gap: 16px; margin-top: 1rem; flex-wrap: wrap; }
+  .summary-item { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot-yes { background: #639922; } .dot-partial { background: #EF9F27; } .dot-no { background: #E24B4A; }
+  .accordions { display: flex; flex-direction: column; gap: 8px; margin-top: 1.5rem; max-width: 720px; }
+  .accordion { border: 0.5px solid var(--border-tertiary); border-radius: var(--radius-lg); overflow: hidden; }
+  .acc-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; cursor: pointer; background: var(--bg-primary); gap: 12px; user-select: none; }
+  .acc-header:hover { background: var(--bg-secondary); }
+  .acc-left { display: flex; align-items: center; gap: 10px; }
+  .acc-tag { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: var(--radius-md); white-space: nowrap; }
+  .tag-silo   { background: #EEEDFE; color: #3C3489; }
+  .tag-stage1 { background: #EAF3DE; color: #27500A; }
+  .tag-stage2 { background: #E6F1FB; color: #0C447C; }
+  @media (prefers-color-scheme: dark) {
+    .tag-silo   { background: #3C3489; color: #CECBF6; }
+    .tag-stage1 { background: #27500A; color: #C0DD97; }
+    .tag-stage2 { background: #0C447C; color: #B5D4F4; }
+  }
+  .acc-title { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+  .acc-chevron { width: 16px; height: 16px; flex-shrink: 0; color: var(--text-tertiary); transition: transform 0.2s ease; }
+  .acc-chevron.open { transform: rotate(180deg); }
+  .acc-body { display: none; padding: 0 16px 16px; border-top: 0.5px solid var(--border-tertiary); background: var(--bg-primary); }
+  .acc-body.open { display: block; }
+  .acc-body p { font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-top: 14px; }
+  .acc-body p + p { margin-top: 10px; }
+  .acc-body strong { font-weight: 500; color: var(--text-primary); }
+  .acc-body .callout {
+    margin-top: 14px; padding: 10px 14px 10px 12px;
+    border-radius: var(--radius-md);
+    border-left: 2px solid var(--border-secondary);
+    background: var(--bg-secondary);
+    font-size: 12.5px; color: var(--text-secondary); line-height: 1.6;
+    display: flex; gap: 10px; align-items: center;
+  }
+  .callout-icon { flex-shrink: 0; width: 16px; height: 16px; color: var(--text-tertiary); }
+  .callout-text { flex: 1; }
+  #tooltip {
+    position: fixed; display: none; background: var(--bg-primary);
+    border: 0.5px solid var(--border-secondary); border-radius: var(--radius-md);
+    padding: 8px 12px; font-size: 12px; color: var(--text-primary);
+    line-height: 1.5; max-width: 260px; white-space: normal; z-index: 9999; pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  #tooltip strong { font-weight: 500; display: block; margin-bottom: 3px; font-size: 11.5px; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+
+<div id="tooltip"></div>
+
+<div class="page-header">
+  <h1>3D printing software — competitive analysis matrix</h1>
+  <p>12 tools across 2 workflow stages: geometry creation and manufacturing file creation.<br>Filter by category or stage. Use highlight buttons to surface attribute patterns. Hover any score cell or column header for criterion description.</p>
+</div>
+
+<div class="wrap">
+  <div class="controls">
+    <select id="cat-filter">
+      <option value="all">All categories</option>
+      <option value="Slicer">Slicer</option>
+      <option value="CAD">CAD</option>
+      <option value="GenAI">GenAI</option>
+      <option value="Hub">Hub</option>
+    </select>
+    <select id="score-filter">
+      <option value="all">All scores</option>
+      <option value="yes">Has "Yes" in view</option>
+      <option value="partial">Has "Partial" in view</option>
+      <option value="no">All "No" in view</option>
+    </select>
+    <input type="text" id="search" placeholder="Search tools..." />
+  </div>
+  <div class="stage-tabs">
+    <div class="tab active" data-stage="all">All criteria</div>
+    <div class="tab" data-stage="1">Stage 1 — Geometry creation</div>
+    <div class="tab" data-stage="2">Stage 2 — Manufacturing file creation</div>
+  </div>
+  <div class="attr-row">
+    <span class="attr-label">Highlight</span>
+    <button class="attr-btn" data-attr="ease">Ease of use</button>
+    <button class="attr-btn" data-attr="mfg">FDM focused</button>
+    <button class="attr-btn" data-attr="interop">Interoperability</button>
+    <button class="attr-clear" id="clear-btn">Clear</button>
+  </div>
+  <div class="result-count" id="result-count"></div>
+  <div class="table-outer">
+    <table id="matrix"><thead id="thead"></thead><tbody id="tbody"></tbody></table>
+  </div>
+  <div class="summary-bar">
+    <div class="summary-item"><span class="dot dot-yes"></span> Yes — fully supported</div>
+    <div class="summary-item"><span class="dot dot-partial"></span> Partial — limited support</div>
+    <div class="summary-item"><span class="dot dot-no"></span> No — not supported</div>
+  </div>
+  <div class="accordions">
+    <div class="accordion">
+      <div class="acc-header" onclick="toggle('silo')">
+        <div class="acc-left"><span class="acc-tag tag-silo">Finding</span><span class="acc-title">The silo pattern — no tool was designed with the full workflow in mind</span></div>
+        <svg class="acc-chevron" id="chev-silo" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="acc-body" id="body-silo">
+        <p>The matrix makes it visually undeniable that no tool — except Aibuild OS, which serves a different audience — was designed with the full workflow in mind. Every tool assumes you'll figure out the handoff yourself.</p>
+        <p>That's not a gap in any single product. It's a <strong>structural gap in the category</strong>. The workflow from design intent to printed object emerged organically, tool by tool, and was never designed as an end-to-end process. Each tool solved its own problem well and stopped at its own boundary.</p>
+        <div class="callout">
+          <svg class="callout-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 7v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="5" r="0.6" fill="currentColor"/></svg>
+          <span class="callout-text">The product opportunity lives in the white space between stages — not necessarily within either stage itself. A tool that owns the handoff owns the workflow.</span>
+        </div>
+      </div>
+    </div>
+    <div class="accordion">
+      <div class="acc-header" onclick="toggle('s1')">
+        <div class="acc-left"><span class="acc-tag tag-stage1">Stage 1</span><span class="acc-title">Geometry creation — a diverse but unsettled space</span></div>
+        <svg class="acc-chevron" id="chev-s1" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="acc-body" id="body-s1">
+        <p>The variety across Stage 1 tools isn't accidental — it reflects a problem that is <strong>genuinely hard and unsolved</strong>. There's no consensus on the best way to help a maker go from idea to printable geometry. Each tool represents a different philosophical bet: constrained sketching, code, nodes, sculpting, AI prompting. That diversity signals an immature, still-evolving space.</p>
+        <p>This creates surface area for innovation, but also real crowding. Makers already have Fusion 360, Tinkercad, Blender, and increasingly AI tools competing for their attention. A new geometry creation tool requires a clear reason to switch that none of the incumbents can easily copy.</p>
+        <div class="callout">
+          <svg class="callout-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 7v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="5" r="0.6" fill="currentColor"/></svg>
+          <span class="callout-text">More variety in Stage 1 does not automatically mean more opportunity. It may mean the opposite — that the space is already fragmented enough that another tool without a distinct paradigm would struggle to find footing.</span>
+        </div>
+      </div>
+    </div>
+    <div class="accordion">
+      <div class="acc-header" onclick="toggle('s2')">
+        <div class="acc-left"><span class="acc-tag tag-stage2">Stage 2</span><span class="acc-title">Manufacturing file creation — technically solved, experientially broken</span></div>
+        <svg class="acc-chevron" id="chev-s2" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="acc-body" id="body-s2">
+        <p>Stage 2 looks homogeneous because the slicing problem is largely <strong>technically solved</strong>. All three dedicated slicers in this analysis are Cura derivatives — not by coincidence, but because Cura's open-source foundation became the dominant substrate and forks competed on UI and hardware optimization rather than on fundamentally different approaches. The slicing paradigm itself hasn't been meaningfully challenged in years.</p>
+        <p>But technically solved is not the same as experientially good. Slicers are informationally opaque — a maker with a failed print has almost no in-tool guidance for what went wrong or what to change. JusPrin attempts a paradigm shift by hiding the slicer entirely, but this trades transparency for ease. For makers who want to understand how things work, that tradeoff may be a dealbreaker.</p>
+        <p>There's also a powerful community inertia at play. OrcaSlicer and PrusaSlicer have ecosystems of shared profiles, tuning guides, and community-validated settings built up over years. Switching slicers means leaving that behind — which may be a stronger barrier than any technical lock-in.</p>
+        <div class="callout">
+          <svg class="callout-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 7v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="5" r="0.6" fill="currentColor"/></svg>
+          <span class="callout-text">The Stage 2 opportunity isn't in building a better slicer. It's in making the slicer's decisions legible — connecting what happens in Stage 2 back to decisions made in Stage 1, and surfacing that feedback in a way makers can act on.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CRITERIA=[
+  {id:"1.1",stage:1,label:"Creates geometry from scratch",desc:"Can the user create original 3D geometry within the tool itself, without importing an existing model?"},
+  {id:"1.2",stage:1,label:"Parametric or rule-based editing",desc:"Does the tool support parametric constraints, variables, or rule-based logic to define and drive geometry?"},
+  {id:"1.3",stage:1,label:"Geometry editable post-creation",desc:"Can the user modify geometry after initial creation without starting over from scratch?"},
+  {id:"1.4",stage:1,label:"Print-readiness feedback",desc:"Does the tool provide any feedback on printability, such as wall thickness warnings, overhang detection, or geometry errors?"},
+  {id:"1.5",stage:1,label:"Accessible without CAD training",desc:"Can a maker with no professional CAD background reasonably learn and use this tool for 3D printing?"},
+  {id:"2.1",stage:2,label:"Accepts standard geometry formats",desc:"Does the tool accept common geometry file formats such as STL, 3MF, or STEP for import?"},
+  {id:"2.2",stage:2,label:"Generates printable output",desc:"Does the tool produce G-code or equivalent machine-ready output for FDM 3D printing?"},
+  {id:"2.3",stage:2,label:"Intelligent print preparation",desc:"Does the tool offer automated or AI-assisted support generation, orientation suggestions, or failure risk analysis?"},
+  {id:"2.4",stage:2,label:"Saveable and portable settings",desc:"Can print settings, profiles, or configurations be saved and reused across sessions or different machines?"},
+  {id:"2.5",stage:2,label:"Workflow integration",desc:"Does the tool integrate with or hand off cleanly to other tools in the broader design-to-print workflow?"},
+];
+const ATTRS={
+  ease:   {criteria:["1.1","1.3","1.5"]},
+  mfg:    {criteria:["1.2","1.4","2.2","2.3"]},
+  interop:{criteria:["2.1","2.4","2.5"]},
+};
+const Y="yes",P="partial",N="no";
+const TOOLS=[
+  {name:"OrcaSlicer",  cat:"Slicer",scores:{"1.1":N,"1.2":N,"1.3":N,"1.4":P,"1.5":Y,"2.1":Y,"2.2":Y,"2.3":Y,"2.4":Y,"2.5":P}},
+  {name:"Bambu Studio",cat:"Slicer",scores:{"1.1":N,"1.2":N,"1.3":N,"1.4":P,"1.5":Y,"2.1":Y,"2.2":Y,"2.3":Y,"2.4":Y,"2.5":N}},
+  {name:"JusPrin",     cat:"Slicer",scores:{"1.1":N,"1.2":N,"1.3":N,"1.4":P,"1.5":Y,"2.1":Y,"2.2":Y,"2.3":Y,"2.4":P,"2.5":N}},
+  {name:"Fusion 360",  cat:"CAD",  scores:{"1.1":Y,"1.2":Y,"1.3":Y,"1.4":P,"1.5":P,"2.1":Y,"2.2":P,"2.3":N,"2.4":P,"2.5":P}},
+  {name:"OpenSCAD",    cat:"CAD",  scores:{"1.1":Y,"1.2":Y,"1.3":Y,"1.4":N,"1.5":N,"2.1":Y,"2.2":N,"2.3":N,"2.4":N,"2.5":N}},
+  {name:"Blender",     cat:"CAD",  scores:{"1.1":Y,"1.2":N,"1.3":P,"1.4":N,"1.5":N,"2.1":Y,"2.2":N,"2.3":N,"2.4":N,"2.5":P}},
+  {name:"Tinkercad",   cat:"CAD",  scores:{"1.1":Y,"1.2":N,"1.3":P,"1.4":P,"1.5":Y,"2.1":Y,"2.2":N,"2.3":N,"2.4":N,"2.5":P}},
+  {name:"Shapr3D",     cat:"CAD",  scores:{"1.1":Y,"1.2":Y,"1.3":Y,"1.4":N,"1.5":P,"2.1":Y,"2.2":N,"2.3":N,"2.4":N,"2.5":P}},
+  {name:"Grasshopper", cat:"CAD",  scores:{"1.1":Y,"1.2":Y,"1.3":Y,"1.4":N,"1.5":N,"2.1":Y,"2.2":P,"2.3":N,"2.4":N,"2.5":P}},
+  {name:"Sloyd",       cat:"GenAI",scores:{"1.1":Y,"1.2":P,"1.3":P,"1.4":N,"1.5":Y,"2.1":N,"2.2":N,"2.3":N,"2.4":N,"2.5":N}},
+  {name:"CADAgent",    cat:"GenAI",scores:{"1.1":P,"1.2":P,"1.3":P,"1.4":P,"1.5":Y,"2.1":N,"2.2":N,"2.3":N,"2.4":N,"2.5":P}},
+  {name:"Aibuild OS",  cat:"Hub",  scores:{"1.1":P,"1.2":P,"1.3":Y,"1.4":Y,"1.5":N,"2.1":Y,"2.2":Y,"2.3":Y,"2.4":Y,"2.5":Y}},
+];
+
+let activeStage="all",activeCat="all",activeScoreFilter="all",searchVal="";
+let activeAttrs=new Set();
+
+function catClass(c){return c==="Slicer"?"cat-slicer":c==="CAD"?"cat-cad":c==="GenAI"?"cat-genai":"cat-hub";}
+function scoreLabel(s){
+  if(s===Y) return '<span class="score score-yes">Yes</span>';
+  if(s===P) return '<span class="score score-partial">Partial</span>';
+  return '<span class="score score-no">No</span>';
+}
+function getVisible(){return activeStage==="all"?CRITERIA:CRITERIA.filter(c=>c.stage===parseInt(activeStage));}
+function getHlCriteria(){const all=new Set();activeAttrs.forEach(a=>ATTRS[a].criteria.forEach(id=>all.add(id)));return all;}
+
+function syncBtnStyles(){
+  const isDark=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const activeBg   = isDark ? "#1c1c1a" : "#ffffff";
+  const inactiveBg = isDark ? "#252523" : "#f5f5f3";
+  const activeColor   = isDark ? "#f0efe8" : "#1a1a18";
+  const inactiveColor = isDark ? "#9b9b97" : "#6b6b67";
+  const activeBorder   = isDark ? "1.5px solid #f0efe8" : "1.5px solid #1a1a18";
+  const inactiveBorder = isDark ? "0.5px solid rgba(255,255,255,0.18)" : "0.5px solid rgba(0,0,0,0.22)";
+  document.querySelectorAll(".attr-btn").forEach(btn=>{
+    const on=activeAttrs.has(btn.dataset.attr);
+    btn.style.background=on?activeBg:inactiveBg;
+    btn.style.color=on?activeColor:inactiveColor;
+    btn.style.border=on?activeBorder:inactiveBorder;
+  });
+}
+
+function renderTable(){
+  const criteria=getVisible();
+  const s1=criteria.filter(c=>c.stage===1),s2=criteria.filter(c=>c.stage===2);
+  const hlCriteria=getHlCriteria(),hasAttr=activeAttrs.size>0;
+
+  let hdr='<tr><th></th><th class="divider-left"></th>';
+  if(s1.length) hdr+=`<th colspan="${s1.length}" class="stage-label divider-left">Stage 1 — Geometry creation</th>`;
+  if(s2.length) hdr+=`<th colspan="${s2.length}" class="stage-label divider-left">Stage 2 — Manufacturing file creation</th>`;
+  hdr+='</tr><tr><th>Tool</th><th class="divider-left">Category</th>';
+  criteria.forEach(c=>{
+    const hl=hasAttr&&hlCriteria.has(c.id)?' col-hl':'';
+    hdr+=`<th class="crit-header divider-left${hl}" data-id="${c.id}"><div class="th-inner"><span class="th-id">${c.id}</span>${c.label}</div></th>`;
+  });
+  hdr+='</tr>';
+  document.getElementById("thead").innerHTML=hdr;
+
+  let visible=0,rows='';
+  TOOLS.forEach(tool=>{
+    const catOk=activeCat==="all"||tool.cat===activeCat;
+    const srchOk=searchVal===""||tool.name.toLowerCase().includes(searchVal.toLowerCase());
+    let scoreOk=true;
+    if(activeScoreFilter!=="all"){
+      const ss=criteria.map(c=>tool.scores[c.id]);
+      if(activeScoreFilter==="yes") scoreOk=ss.includes(Y);
+      else if(activeScoreFilter==="partial") scoreOk=ss.includes(P);
+      else if(activeScoreFilter==="no") scoreOk=ss.every(s=>s===N);
+    }
+    const show=catOk&&srchOk&&scoreOk;
+    if(show) visible++;
+    let yesHits=0;
+    if(hasAttr) criteria.forEach(c=>{if(hlCriteria.has(c.id)&&tool.scores[c.id]===Y) yesHits++;});
+    const rowHl=hasAttr&&yesHits>=4;
+    rows+=`<tr class="${show?'':'hidden-row'}${rowHl?' row-hl':''}">`;
+    rows+=`<td>${tool.name}</td>`;
+    rows+=`<td class="divider-left"><span class="cat-badge ${catClass(tool.cat)}">${tool.cat}</span></td>`;
+    criteria.forEach(c=>{
+      const isYesHl=hasAttr&&hlCriteria.has(c.id)&&tool.scores[c.id]===Y;
+      rows+=`<td class="divider-left${isYesHl?' yes-hl':''}" data-cid="${c.id}">${scoreLabel(tool.scores[c.id])}</td>`;
+    });
+    rows+='</tr>';
+  });
+  document.getElementById("tbody").innerHTML=rows;
+  document.getElementById("result-count").textContent=`Showing ${visible} of ${TOOLS.length} tools`;
+}
+
+document.querySelectorAll(".attr-btn").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    const attr=btn.dataset.attr;
+    if(activeAttrs.has(attr)) activeAttrs.delete(attr);
+    else activeAttrs.add(attr);
+    syncBtnStyles();
+    renderTable();
+  });
+});
+document.getElementById("clear-btn").addEventListener("click",()=>{
+  activeAttrs.clear();
+  syncBtnStyles();
+  renderTable();
+});
+function toggle(id){
+  const body=document.getElementById('body-'+id),chev=document.getElementById('chev-'+id);
+  const open=body.classList.contains('open');
+  body.classList.toggle('open',!open);chev.classList.toggle('open',!open);
+}
+const tooltip=document.getElementById("tooltip");
+document.addEventListener("mouseover",e=>{
+  const el=e.target.closest("th[data-id]")||e.target.closest("td[data-cid]");
+  if(!el) return;
+  const id=el.dataset.id||el.dataset.cid;
+  const crit=CRITERIA.find(c=>c.id===id);
+  if(!crit) return;
+  tooltip.innerHTML=`<strong>${crit.id} — ${crit.label}</strong>${crit.desc}`;
+  tooltip.style.display="block";
+});
+document.addEventListener("mousemove",e=>{
+  if(tooltip.style.display==="none") return;
+  let x=e.clientX+14,y=e.clientY+14;
+  if(x+tooltip.offsetWidth>window.innerWidth-8) x=e.clientX-tooltip.offsetWidth-14;
+  if(y+tooltip.offsetHeight>window.innerHeight-8) y=e.clientY-tooltip.offsetHeight-14;
+  tooltip.style.left=x+"px";tooltip.style.top=y+"px";
+});
+document.addEventListener("mouseout",e=>{
+  if(e.target.closest("th[data-id]")||e.target.closest("td[data-cid]")) tooltip.style.display="none";
+});
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    tab.classList.add("active");activeStage=tab.dataset.stage;renderTable();
+  });
+});
+document.getElementById("cat-filter").addEventListener("change",e=>{activeCat=e.target.value;renderTable();});
+document.getElementById("score-filter").addEventListener("change",e=>{activeScoreFilter=e.target.value;renderTable();});
+document.getElementById("search").addEventListener("input",e=>{searchVal=e.target.value;renderTable();});
+renderTable();
+</script>
+</body>
+</html>
