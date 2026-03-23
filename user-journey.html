@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Printing — User Journey Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #111010;
+  --surface-1: #1c1b1a;
+  --surface-2: #232120;
+  --surface-3: #2c2a28;
+  --border:    #312f2d;
+  --border-2:  #3d3a37;
+
+  --text-1: #e6e2de;
+  --text-2: #c8c3be;
+  --text-3: #6e6a66;
+
+  --green:        #a8d86e;
+  --green-dim:    rgba(168,216,110,0.13);
+  --green-border: rgba(168,216,110,0.32);
+  --red:          #e07070;
+  --red-dim:      rgba(224,112,112,0.13);
+  --red-border:   rgba(224,112,112,0.32);
+
+  --s-disc: #60a5fa;
+  --s-plan: #a78bfa;
+  --s-mod:  #34d399;
+  --s-iter: #fb923c;
+  --s-mfg:  #f472b6;
+
+  --s-disc-bg: rgba( 96,165,250,0.10);
+  --s-plan-bg: rgba(167,139,250,0.10);
+  --s-mod-bg:  rgba( 52,211,153,0.10);
+  --s-iter-bg: rgba(251,146, 60,0.10);
+  --s-mfg-bg:  rgba(244,114,182,0.10);
+
+  --pain-bg: rgba(224,112,112,0.10);
+  --gain-bg: rgba(168,216,110,0.10);
+
+  --label-w: 110px;
+  --step-w:  210px;
+  --cp:      12px 14px;
+  --radius:  6px;
+  --mat-pad: 44px;
+  --hdr-max: 800px;
+  --sum-max: 1200px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+/* ═══════════════════════════════
+   HEADER
+═══════════════════════════════ */
+.hdr {
+  padding: 44px 44px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: var(--hdr-max);
+}
+
+.flow-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 9.5px; font-weight: 500;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--text-2); margin-bottom: 10px;
+}
+.flow-title {
+  font-size: 32px; font-weight: 600;
+  line-height: 1.15; color: var(--text-1);
+  margin-bottom: 12px; letter-spacing: -0.02em;
+}
+.flow-desc {
+  font-size: 12.5px; color: var(--text-2);
+  line-height: 1.65; margin-bottom: 16px;
+}
+.stage-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; font-weight: 500;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 3px; border: 1px solid;
+}
+.c-disc { color:var(--s-disc); border-color:var(--s-disc); background:var(--s-disc-bg); }
+.c-plan { color:var(--s-plan); border-color:var(--s-plan); background:var(--s-plan-bg); }
+.c-mod  { color:var(--s-mod);  border-color:var(--s-mod);  background:var(--s-mod-bg); }
+.c-iter { color:var(--s-iter); border-color:var(--s-iter); background:var(--s-iter-bg); }
+.c-mfg  { color:var(--s-mfg);  border-color:var(--s-mfg);  background:var(--s-mfg-bg); }
+
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+.card-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; font-weight: 500;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--text-3); margin-bottom: 14px;
+}
+
+.scope-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+.scope-col  { display: flex; flex-direction: column; gap: 5px; }
+.scope-item { display: flex; align-items: flex-start; gap: 7px; font-size: 12px; color: var(--text-2); line-height: 1.5; }
+.si-in  { color: var(--green); font-size: 11px; flex-shrink: 0; margin-top: 2px; }
+.si-out { color: var(--red);   font-size: 11px; flex-shrink: 0; margin-top: 2px; }
+
+.persona-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+.persona-body {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 18px;
+  align-items: start;
+}
+.p-avatar {
+  width: 42px; height: 42px;
+  background: var(--surface-3); border: 1px solid var(--border-2); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.p-name { font-size: 13.5px; font-weight: 600; color: var(--text-1); margin-bottom: 1px; }
+.p-role { font-family: 'DM Mono', monospace; font-size: 10.5px; color: var(--text-3); letter-spacing: .05em; margin-bottom: 8px; }
+.p-desc { font-size: 12px; color: var(--text-2); line-height: 1.6; margin-bottom: 10px; }
+.p-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.ptag {
+  font-family: 'DM Mono', monospace; font-size: 9px;
+  padding: 2px 7px; border-radius: 3px;
+  background: var(--surface-3); border: 1px solid var(--border-2); color: var(--text-2);
+}
+
+/* ═══════════════════════════════
+   MATRIX
+═══════════════════════════════ */
+.matrix-outer {
+  overflow-x: auto;
+  cursor: grab;
+}
+.matrix-outer:active { cursor: grabbing; }
+
+/* scrollbar sits right below the grid, no extra gap */
+.matrix-outer::-webkit-scrollbar {
+  height: 6px;
+}
+.matrix-outer::-webkit-scrollbar-track {
+  background: var(--surface-2);
+  border-radius: 0 0 3px 3px;
+}
+.matrix-outer::-webkit-scrollbar-thumb {
+  background: var(--border-2);
+  border-radius: 3px;
+}
+.matrix-outer::-webkit-scrollbar-thumb:hover {
+  background: #5a5653;
+}
+.matrix-outer {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-2) var(--surface-2);
+}
+
+/* mgrid-wrap: provides rounded corners via outline trick — no overflow:hidden so sticky works */
+.mgrid-wrap {
+  min-width: max-content;
+  position: relative;
+  border-radius: var(--radius);
+  /* Use box-shadow as the border so overflow:hidden is not needed */
+  box-shadow: 0 0 0 1px var(--border);
+}
+/* pseudo-element overlay creates the rounded-corner mask without clipping children */
+.mgrid-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 1px var(--border);
+  pointer-events: none;
+  z-index: 30;
+}
+
+.mgrid {
+  display: grid;
+  grid-template-columns: var(--label-w) repeat(16, var(--step-w));
+  grid-template-rows:
+    auto
+    auto
+    auto
+    auto
+    auto
+    180px
+    auto
+    auto;
+  min-width: max-content;
+  border-radius: var(--radius);
+}
+
+.matrix-outer-pad { padding: 0 var(--mat-pad) 40px; }
+
+/* stage headers */
+.shdr {
+  grid-row: 1;
+  padding: 9px 14px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.shdr-lbl  { grid-column:1;     background:var(--surface-2); position:sticky; left:0; z-index:20; }
+.shdr-disc { grid-column:2/5;   background:var(--s-disc-bg); }
+.shdr-plan { grid-column:5/7;   background:var(--s-plan-bg); }
+.shdr-mod  { grid-column:7/13;  background:var(--s-mod-bg); }
+.shdr-iter { grid-column:13/16; background:var(--s-iter-bg); }
+.shdr-mfg  { grid-column:16/18; background:var(--s-mfg-bg); border-right:none; }
+
+.shdr-name {
+  font-family: 'DM Mono', monospace;
+  font-size: 9.5px; font-weight: 500;
+  letter-spacing: .14em; text-transform: uppercase;
+}
+.shdr-disc .shdr-name { color:var(--s-disc); }
+.shdr-plan .shdr-name { color:var(--s-plan); }
+.shdr-mod  .shdr-name { color:var(--s-mod); }
+.shdr-iter .shdr-name { color:var(--s-iter); }
+.shdr-mfg  .shdr-name { color:var(--s-mfg); }
+
+/* label column */
+.rlbl {
+  grid-column: 1;
+  padding: var(--cp);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  position: sticky; left: 0; z-index: 10;
+  display: flex; align-items: flex-start;
+}
+.rlbl-text {
+  font-family: 'DM Mono', monospace;
+  font-size: 8.5px; font-weight: 500;
+  letter-spacing: .13em; text-transform: uppercase;
+  color: var(--text-3); padding-top: 2px;
+}
+.rlbl-pain  { background: var(--surface-2); }
+.rlbl-gain  { background: var(--surface-2); }
+/* curve label: keep border-bottom so the line appears between arc and pain rows */
+.rlbl-curve { background: var(--surface-2); border-bottom: 1px solid var(--border); align-items: center; }
+
+/* data cells */
+.c {
+  padding: var(--cp);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-size: 11.5px; color: var(--text-2); line-height: 1.55;
+  background: var(--surface-1);
+}
+/* bigger bullets — base (actions row) */
+.c ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.c ul li { display: flex; align-items: flex-start; gap: 7px; }
+.c ul li::before {
+  content: '↳';
+  color: var(--text-3);
+  flex-shrink: 0;
+  line-height: 1.55;
+  font-size: 12px;
+}
+
+.c-name { grid-row:2; background:var(--surface-2); overflow:hidden; }
+.c-act  { grid-row:3; }
+.c-prog { grid-row:4; }
+.c-emo  { grid-row:5; display:flex; align-items:center; gap:8px; }
+.c-pain { grid-row:7; background:var(--pain-bg); font-weight:500; }
+.c-gain { grid-row:8; background:var(--gain-bg); font-weight:500; border-bottom:none; }
+
+/* per-row bullet overrides */
+.c-pain ul li::before { content: '–'; color: var(--red);   opacity:.8; font-size:13px; }
+.c-gain ul li::before { content: '+'; color: var(--green); opacity:.8; font-size:13px; font-weight:600; }
+
+.c[style*="grid-column:17"] { border-right:none; }
+
+.step-num   { font-family:'DM Mono',monospace; font-size:8.5px; color:var(--text-3); margin-bottom:3px; }
+.step-title { font-size:11.5px; font-weight:600; color:var(--text-1); line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.emo-emoji { font-size:20px; line-height:1; flex-shrink:0; }
+.emo-label { font-size:11px; color:var(--text-2); line-height:1.4; }
+
+.prog-wrap { display:flex; flex-wrap:wrap; gap:4px; }
+.prog-tag  {
+  font-family:'DM Mono',monospace; font-size:9px;
+  padding:2px 7px; border-radius:3px;
+  background:var(--surface-3); border:1px solid var(--border-2); color:var(--text-2);
+}
+.none-txt { font-family:'DM Mono',monospace; font-size:10px; color:var(--text-3); font-style:italic; }
+
+.c-curve {
+  grid-row:6; grid-column:2/18;
+  padding:0; background:var(--surface-1);
+  border-bottom:1px solid var(--border);
+  overflow:hidden;
+}
+
+/* ═══════════════════════════════
+   SUMMARY — accordions, stacked
+═══════════════════════════════ */
+.summary {
+  padding: 0 44px 48px;
+  max-width: var(--sum-max);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.acc-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.acc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  cursor: pointer;
+  user-select: none;
+  gap: 12px;
+  transition: background 0.15s;
+}
+.acc-header:hover { background: var(--surface-2); }
+
+.acc-header-left { display: flex; align-items: center; gap: 12px; }
+
+.acc-eye {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; font-weight: 500;
+  letter-spacing: .15em; text-transform: uppercase;
+}
+.acc-pain .acc-eye { color: var(--red); }
+.acc-gain .acc-eye { color: var(--green); }
+.acc-obs  .acc-eye { color: var(--text-1); }
+
+.acc-count { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text-3); }
+
+.acc-chevron {
+  width: 16px; height: 16px; flex-shrink: 0;
+  color: var(--text-3);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.acc-card.open .acc-chevron { transform: rotate(180deg); }
+
+/* smooth accordion body using max-height transition */
+.acc-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.acc-card.open .acc-body {
+  grid-template-rows: 1fr;
+}
+.acc-body-inner {
+  overflow: hidden;
+  border-top: 0px solid var(--border);
+  transition: border-top-width 0.01s 0.31s; /* delay border until body is closed */
+}
+.acc-card.open .acc-body-inner {
+  border-top: 1px solid var(--border);
+  transition: border-top-width 0s;
+}
+.acc-body-pad {
+  padding: 4px 20px 8px;
+}
+
+/* numbered items */
+.si {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.si:last-child { border-bottom: none; }
+
+.si-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px; font-weight: 500;
+  color: var(--text-3);
+  flex-shrink: 0;
+  min-width: 16px;
+  text-align: right;
+  line-height: 1.55;
+}
+.si-title { font-size:12px; font-weight:600; color:var(--text-1); margin-bottom:3px; }
+.si-body  { font-size:11.5px; color:var(--text-2); line-height:1.6; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div>
+    <div class="flow-eyebrow">User Journey Map</div>
+    <div class="flow-title">Making a 3D Printed Object</div>
+    <div class="flow-desc">End-to-end workflow from initial concept through first print submission, mapped across 5 stages and 16 steps.</div>
+    <div class="stage-chips">
+      <span class="chip c-disc">Discovery</span>
+      <span class="chip c-plan">Planning</span>
+      <span class="chip c-mod">Modeling</span>
+      <span class="chip c-iter">Iteration</span>
+      <span class="chip c-mfg">Manufacturing</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-eyebrow">Scope</div>
+    <div class="scope-cols">
+      <div class="scope-col">
+        <div class="scope-item"><span class="si-in">✓</span>Ideation through first print submission</div>
+        <div class="scope-item"><span class="si-in">✓</span>Tool selection and document setup</div>
+        <div class="scope-item"><span class="si-in">✓</span>Parametric modeling in Fusion 360</div>
+        <div class="scope-item"><span class="si-in">✓</span>Slicing and toolpath configuration</div>
+        <div class="scope-item"><span class="si-in">✓</span>Design-to-slicer iteration loop</div>
+      </div>
+      <div class="scope-col">
+        <div class="scope-item"><span class="si-out">✕</span>Post-print evaluation and quality review</div>
+        <div class="scope-item"><span class="si-out">✕</span>Physical finishing or assembly</div>
+        <div class="scope-item"><span class="si-out">✕</span>Multi-user or collaborative workflows</div>
+        <div class="scope-item"><span class="si-out">✕</span>Material selection process</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="persona-card card">
+    <div class="card-eyebrow">Persona</div>
+    <div class="persona-body">
+      <div class="p-avatar">🧑‍💻</div>
+      <div>
+        <div class="p-name">The Maker</div>
+        <div class="p-role">Experienced Hobbyist</div>
+        <div class="p-desc">A technically proficient user with prior Fusion 360 experience and a strong working knowledge of 3D printing as a manufacturing process. Comfortable with complexity, persistent through friction, but not immune to frustration.</div>
+        <div class="p-tags">
+          <span class="ptag">Fusion 360 proficient</span>
+          <span class="ptag">Parametric modeling</span>
+          <span class="ptag">FDM printing</span>
+          <span class="ptag">Systems thinker</span>
+          <span class="ptag">Detail-oriented</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MATRIX -->
+<div class="matrix-outer-pad" style="padding: 0 var(--mat-pad) 40px;">
+<div class="matrix-outer" id="matrixOuter">
+<div class="mgrid-wrap">
+<div class="mgrid" id="mgrid">
+
+  <div class="shdr shdr-lbl"><span class="shdr-name" style="color:var(--text-3)">Stage</span></div>
+  <div class="shdr shdr-disc"><span class="shdr-name">Discovery</span></div>
+  <div class="shdr shdr-plan"><span class="shdr-name">Planning</span></div>
+  <div class="shdr shdr-mod"><span class="shdr-name">Modeling</span></div>
+  <div class="shdr shdr-iter"><span class="shdr-name">Iteration</span></div>
+  <div class="shdr shdr-mfg"><span class="shdr-name">Manufacturing</span></div>
+
+  <div class="rlbl"            style="grid-row:2"><span class="rlbl-text">Step</span></div>
+  <div class="rlbl"            style="grid-row:3"><span class="rlbl-text">Actions</span></div>
+  <div class="rlbl"            style="grid-row:4"><span class="rlbl-text">Programs &amp; Touchpoints</span></div>
+  <div class="rlbl"            style="grid-row:5"><span class="rlbl-text">Emotional State</span></div>
+  <div class="rlbl rlbl-curve" style="grid-row:6"><span class="rlbl-text">Emotional Arc</span></div>
+  <div class="rlbl rlbl-pain"  style="grid-row:7"><span class="rlbl-text">Pain Points</span></div>
+  <div class="rlbl rlbl-gain"  style="grid-row:8"><span class="rlbl-text">Gain Points</span></div>
+
+  <!-- STEP 1 -->
+  <div class="c c-name" style="grid-column:2"><div class="step-num">01</div><div class="step-title">I Have an Idea!</div></div>
+  <div class="c c-act"  style="grid-column:2"><ul><li>Conceptualizing the object mentally</li><li>Visualizing the end goal</li><li>Optionally sketching on paper or collecting reference images</li></ul></div>
+  <div class="c c-prog" style="grid-column:2"><div class="prog-wrap"><span class="prog-tag">None</span><span class="prog-tag">Pen &amp; Paper ✦</span><span class="prog-tag">Pinterest ✦</span></div></div>
+  <div class="c c-emo"  style="grid-column:2"><span class="emo-emoji">😊</span><span class="emo-label">Excited, motivated</span></div>
+  <div class="c c-pain" style="grid-column:2"><span class="none-txt">None</span></div>
+  <div class="c c-gain" style="grid-column:2"><ul><li>Pure creative energy — the spark of inspiration with no friction yet</li></ul></div>
+
+  <!-- STEP 2 -->
+  <div class="c c-name" style="grid-column:3"><div class="step-num">02</div><div class="step-title">Does It Already Exist?</div></div>
+  <div class="c c-act"  style="grid-column:3"><ul><li>Browsing online model repositories</li><li>Evaluating options against the vision</li><li>Concluding nothing fits exactly</li></ul></div>
+  <div class="c c-prog" style="grid-column:3"><div class="prog-wrap"><span class="prog-tag">MakerWorld</span><span class="prog-tag">Online repos</span></div></div>
+  <div class="c c-emo"  style="grid-column:3"><span class="emo-emoji">😐</span><span class="emo-label">Neutral, mildly overwhelmed</span></div>
+  <div class="c c-pain" style="grid-column:3"><ul><li>Too many options to sift through</li><li>Nothing matches the vision</li><li>Search time feels unproductive</li></ul></div>
+  <div class="c c-gain" style="grid-column:3"><ul><li>Existing designs may inform or inspire the custom approach</li></ul></div>
+
+  <!-- STEP 3 -->
+  <div class="c c-name" style="grid-column:4"><div class="step-num">03</div><div class="step-title">Modify or Scratch?</div></div>
+  <div class="c c-act"  style="grid-column:4"><ul><li>Downloading an existing model to evaluate</li><li>Attempting mesh modification in slicer or CAD</li><li>Concluding mesh editing lacks control</li><li>Deciding to model from scratch</li></ul></div>
+  <div class="c c-prog" style="grid-column:4"><div class="prog-wrap"><span class="prog-tag">MakerWorld</span><span class="prog-tag">BambuStudio</span><span class="prog-tag">CAD ✦</span></div></div>
+  <div class="c c-emo"  style="grid-column:4"><span class="emo-emoji">😐</span><span class="emo-label">Neutral, hints of anxiety</span></div>
+  <div class="c c-pain" style="grid-column:4"><ul><li>Mesh models not editable beyond simple scaling</li><li>No parametric control — a hard blocker</li><li>Time spent evaluating this dead-end</li></ul></div>
+  <div class="c c-gain" style="grid-column:4"><ul><li>Clarity — starting from scratch sets a clear direction</li></ul></div>
+
+  <!-- STEP 4 -->
+  <div class="c c-name" style="grid-column:5"><div class="step-num">04</div><div class="step-title">Choose a Tool</div></div>
+  <div class="c c-act"  style="grid-column:5"><ul><li>Evaluating software options</li><li>Selecting Fusion 360 for parametric capability, cost, and familiarity</li><li>Mental pre-planning of model architecture begins</li></ul></div>
+  <div class="c c-prog" style="grid-column:5"><div class="prog-wrap"><span class="prog-tag">Fusion 360</span></div></div>
+  <div class="c c-emo"  style="grid-column:5"><span class="emo-emoji">😐</span><span class="emo-label">Neutral, anxious, excited</span></div>
+  <div class="c c-pain" style="grid-column:5"><ul><li>Tool landscape can overwhelm less experienced users</li><li>Wrong tool choice could waste significant time</li></ul></div>
+  <div class="c c-gain" style="grid-column:5"><ul><li>Prior experience builds confidence</li><li>Free software removes a barrier</li><li>Large ecosystem of tutorials and community forums</li></ul></div>
+
+  <!-- STEP 5 -->
+  <div class="c c-name" style="grid-column:6"><div class="step-num">05</div><div class="step-title">Set Up Parameters</div></div>
+  <div class="c c-act"  style="grid-column:6"><ul><li>Opening Fusion 360</li><li>Taking physical measurements of reference objects</li><li>Entering base parameters (L, W, H) into parameter manager</li><li>Establishing foundational logic before any geometry</li></ul></div>
+  <div class="c c-prog" style="grid-column:6"><div class="prog-wrap"><span class="prog-tag">Fusion 360</span><span class="prog-tag">Measuring tools</span></div></div>
+  <div class="c c-emo"  style="grid-column:6"><span class="emo-emoji">🙂</span><span class="emo-label">Organized, optimistic</span></div>
+  <div class="c c-pain" style="grid-column:6"><ul><li>Requires systems thinking — model logic must be planned before building</li><li>Significant friction point for novice users</li></ul></div>
+  <div class="c c-gain" style="grid-column:6"><ul><li>Parametric foundation creates control and foresight</li><li>Time invested here pays dividends throughout</li></ul></div>
+
+  <!-- STEP 6 -->
+  <div class="c c-name" style="grid-column:7"><div class="step-num">06</div><div class="step-title">Start Building</div></div>
+  <div class="c c-act"  style="grid-column:7"><ul><li>Drawing base sketches driven by parameters</li><li>Building operation timeline: extrusions, subtractions, body splits, surface offsets</li></ul></div>
+  <div class="c c-prog" style="grid-column:7"><div class="prog-wrap"><span class="prog-tag">Fusion 360</span></div></div>
+  <div class="c c-emo"  style="grid-column:7"><span class="emo-emoji">😊</span><span class="emo-label">Good momentum, progress visible</span></div>
+  <div class="c c-pain" style="grid-column:7"><span class="none-txt">None significant</span></div>
+  <div class="c c-gain" style="grid-column:7"><ul><li>Watching form emerge from parameters is satisfying</li><li>Parametric approach already paying off</li></ul></div>
+
+  <!-- STEP 7 -->
+  <div class="c c-name" style="grid-column:8"><div class="step-num">07</div><div class="step-title">Check Mfg. Constraints</div></div>
+  <div class="c c-act"  style="grid-column:8"><ul><li>Defining tolerance and wall thickness parameters</li><li>Switching to BambuStudio to check nozzle size settings</li><li>Using those values to update Fusion 360 parameters</li></ul></div>
+  <div class="c c-prog" style="grid-column:8"><div class="prog-wrap"><span class="prog-tag">Fusion 360</span><span class="prog-tag">BambuStudio</span></div></div>
+  <div class="c c-emo"  style="grid-column:8"><span class="emo-emoji">😐</span><span class="emo-label">Neutral, manageable but disorienting</span></div>
+  <div class="c c-pain" style="grid-column:8"><ul><li>Context-switching between design intent and manufacturing reality</li><li>Nozzle / wall-thickness relationships not always intuitive</li></ul></div>
+  <div class="c c-gain" style="grid-column:8"><ul><li>Catching constraints early prevents costly rework</li><li>Parametric setup makes plugging in validated values easy</li></ul></div>
+
+  <!-- STEP 8 -->
+  <div class="c c-name" style="grid-column:9"><div class="step-num">08</div><div class="step-title">Advanced Formulas</div></div>
+  <div class="c c-act"  style="grid-column:9"><ul><li>Identifying need for complex math to maintain parametric integrity</li><li>Googling ellipse formula</li><li>Using Gemini AI to translate to Fusion 360 syntax</li><li>Successfully implementing the formula</li></ul></div>
+  <div class="c c-prog" style="grid-column:9"><div class="prog-wrap"><span class="prog-tag">Fusion 360</span><span class="prog-tag">Google Search</span><span class="prog-tag">Gemini AI</span></div></div>
+  <div class="c c-emo"  style="grid-column:9"><span class="emo-emoji">😟</span><span class="emo-label">Wary of growing complexity</span></div>
+  <div class="c c-pain" style="grid-column:9"><ul><li>Parameter syntax unintuitive for complex math</li><li>AI dependency introduces uncertainty</li><li>Growing complexity risks cascading errors</li></ul></div>
+  <div class="c c-gain" style="grid-column:9"><ul><li>Formula implemented without breaking parametric structure</li><li>AI makes the translation task fast</li></ul></div>
+
+  <!-- STEP 9 -->
+  <div class="c c-name" style="grid-column:10"><div class="step-num">09</div><div class="step-title">Something's Wrong</div></div>
+  <div class="c c-act"  style="grid-column:10"><ul><li>Discovering output doesn't match intent</li><li>Resisting the band-aid fix</li><li>Scrubbing timeline to find root cause</li><li>Searching YouTube / forums (novice)</li></ul></div>
+  <div class="c c-prog" style="grid-column:10"><div class="prog-wrap"><span class="prog-tag">Fusion 360</span><span class="prog-tag">YouTube ✦</span><span class="prog-tag">Forums ✦</span></div></div>
+  <div class="c c-emo"  style="grid-column:10"><span class="emo-emoji">😤</span><span class="emo-label">Stressed, frustrated, halted</span></div>
+  <div class="c c-pain" style="grid-column:10"><ul><li>Root causes are non-obvious in parametric timelines</li><li>Band-aid fixes compromise model integrity</li><li>Momentum halts completely</li><li>Novice users may not find relevant help</li></ul></div>
+  <div class="c c-gain" style="grid-column:10"><ul><li>Parametric timeline allows non-destructive scrubbing — major advantage over mesh workflows</li></ul></div>
+
+  <!-- STEP 10 -->
+  <div class="c c-name" style="grid-column:11"><div class="step-num">10</div><div class="step-title">Fixed! Back on Track</div></div>
+  <div class="c c-act"  style="grid-column:11"><ul><li>Identifying root cause</li><li>Reworking the relevant timeline section</li><li>Confirming parametric structure intact — no band-aids</li></ul></div>
+  <div class="c c-prog" style="grid-column:11"><div class="prog-wrap"><span class="prog-tag">Fusion 360</span></div></div>
+  <div class="c c-emo"  style="grid-column:11"><span class="emo-emoji">😮‍💨</span><span class="emo-label">Relieved, cautiously re-energized</span></div>
+  <div class="c c-pain" style="grid-column:11"><ul><li>Resolution required significant time and mental energy</li><li>Novice users may give up before reaching this point</li></ul></div>
+  <div class="c c-gain" style="grid-column:11"><ul><li>Resolving without band-aids is a meaningful accomplishment</li><li>Model is on a more solid foundation than before</li></ul></div>
+
+  <!-- STEP 11 -->
+  <div class="c c-name" style="grid-column:12"><div class="step-num">11</div><div class="step-title">Modeling Complete!</div></div>
+  <div class="c c-act"  style="grid-column:12"><ul><li>Finalizing core modeling workflow</li><li>Verifying all geometry is parameter-driven</li><li>Testing by adjusting params and confirming correct output</li></ul></div>
+  <div class="c c-prog" style="grid-column:12"><div class="prog-wrap"><span class="prog-tag">Fusion 360</span></div></div>
+  <div class="c c-emo"  style="grid-column:12"><span class="emo-emoji">😄</span><span class="emo-label">Very pleased, proud</span></div>
+  <div class="c c-pain" style="grid-column:12"><span class="none-txt">None — this is a milestone</span></div>
+  <div class="c c-gain" style="grid-column:12"><ul><li>Fully parametric model is genuinely difficult to achieve</li><li>High point of the Modeling stage — worth recognizing</li></ul></div>
+
+  <!-- STEP 12 -->
+  <div class="c c-name" style="grid-column:13"><div class="step-num">12</div><div class="step-title">Sizing Check</div></div>
+  <div class="c c-act"  style="grid-column:13"><ul><li>Tweaking parameters to explore sizes and proportions</li><li>Cross-referencing with ruler against real-world environment</li><li>Considering a test print — deciding against it</li></ul></div>
+  <div class="c c-prog" style="grid-column:13"><div class="prog-wrap"><span class="prog-tag">Fusion 360</span><span class="prog-tag">Measuring tools</span></div></div>
+  <div class="c c-emo"  style="grid-column:13"><span class="emo-emoji">😕</span><span class="emo-label">Uncertain, hard to judge on screen</span></div>
+  <div class="c c-pain" style="grid-column:13"><ul><li>Digital scale is hard to evaluate on a monitor</li><li>Test print would confirm scale but adds cost</li><li>Uncertainty is a fundamental pre-print limitation</li></ul></div>
+  <div class="c c-gain" style="grid-column:13"><ul><li>One parameter change instantly updates the entire model</li></ul></div>
+
+  <!-- STEP 13 -->
+  <div class="c c-name" style="grid-column:14"><div class="step-num">13</div><div class="step-title">First Look in Slicer</div></div>
+  <div class="c c-act"  style="grid-column:14"><ul><li>Exporting bodies from Fusion 360 as STL/3MF</li><li>Importing into BambuStudio via drag-and-drop</li><li>Assigning process settings, slicing, previewing</li><li>Identifying geometry issues for printability</li></ul></div>
+  <div class="c c-prog" style="grid-column:14"><div class="prog-wrap"><span class="prog-tag">Fusion 360</span><span class="prog-tag">BambuStudio</span></div></div>
+  <div class="c c-emo"  style="grid-column:14"><span class="emo-emoji">😬</span><span class="emo-label">Antsy, close but not there yet</span></div>
+  <div class="c c-pain" style="grid-column:14"><ul><li>Export-import workflow is multi-step and repetitive</li><li>Geometry issues appear that weren't visible in Fusion 360</li><li>Feels like a setback even though it's necessary</li></ul></div>
+  <div class="c c-gain" style="grid-column:14"><ul><li>Seeing the model in the slicer for the first time is exciting</li><li>Preview gives concrete insight into how the printer will build it</li></ul></div>
+
+  <!-- STEP 14 -->
+  <div class="c c-name" style="grid-column:15"><div class="step-num">14</div><div class="step-title">Back and Forth</div></div>
+  <div class="c c-act"  style="grid-column:15"><ul><li>Returning to Fusion 360 for geometry adjustments</li><li>Re-exporting, reimporting, re-slicing</li><li>Repeating until geometry is print-ready</li></ul></div>
+  <div class="c c-prog" style="grid-column:15"><div class="prog-wrap"><span class="prog-tag">Fusion 360</span><span class="prog-tag">BambuStudio</span></div></div>
+  <div class="c c-emo"  style="grid-column:15"><span class="emo-emoji">😮‍💨</span><span class="emo-label">Relieved when loop resolves</span></div>
+  <div class="c c-pain" style="grid-column:15"><ul><li>Each round-trip involves repetitive manual steps</li><li>No live bridge between Fusion 360 and BambuStudio</li></ul></div>
+  <div class="c c-gain" style="grid-column:15"><ul><li>Parametric model makes geometry changes quick and reliable</li><li>Closing the modeling phase is a meaningful milestone</li></ul></div>
+
+  <!-- STEP 15 -->
+  <div class="c c-name" style="grid-column:16"><div class="step-num">15</div><div class="step-title">Dial In Slicer Settings</div></div>
+  <div class="c c-act"  style="grid-column:16"><ul><li>Navigating BambuStudio settings menus in depth</li><li>Configuring layer height, infill, supports, speed, etc.</li><li>Toggling between Prepare and Preview to validate toolpath</li></ul></div>
+  <div class="c c-prog" style="grid-column:16"><div class="prog-wrap"><span class="prog-tag">BambuStudio</span></div></div>
+  <div class="c c-emo"  style="grid-column:16"><span class="emo-emoji">🙂</span><span class="emo-label">Cautious, morale trending up</span></div>
+  <div class="c c-pain" style="grid-column:16"><ul><li>Menus are extensive and cumbersome</li><li>Prepare/Preview toggle is repetitive</li><li>Novice users face a steep knowledge barrier</li></ul></div>
+  <div class="c c-gain" style="grid-column:16"><ul><li>Experienced users can move through this efficiently</li><li>Finish line is clearly visible</li></ul></div>
+
+  <!-- STEP 16 -->
+  <div class="c c-name" style="grid-column:17"><div class="step-num">16</div><div class="step-title">Send It!</div></div>
+  <div class="c c-act"  style="grid-column:17"><ul><li>Sending finalized toolpath to the printer</li><li>Watching the file upload</li><li>Monitoring print start via video feed or in-person</li><li>Transitioning to watching and waiting</li></ul></div>
+  <div class="c c-prog" style="grid-column:17"><div class="prog-wrap"><span class="prog-tag">BambuStudio</span><span class="prog-tag">Printer interface</span><span class="prog-tag">Camera feed</span></div></div>
+  <div class="c c-emo"  style="grid-column:17"><span class="emo-emoji">😊😬</span><span class="emo-label">Excited but nervous</span></div>
+  <div class="c c-pain" style="grid-column:17"><ul><li>Inherent uncertainty — something could still go wrong</li><li>Failures waste material and time</li><li>Real answers only come once the print completes</li></ul></div>
+  <div class="c c-gain" style="grid-column:17"><ul><li>Hitting "send" is deeply satisfying after such an involved process</li><li>Physical object — even imperfect — is far more informative than any preview</li></ul></div>
+
+  <div class="c-curve"><canvas id="emotionCurve"></canvas></div>
+
+</div><!-- /mgrid -->
+</div><!-- /mgrid-wrap -->
+</div><!-- /matrix-outer -->
+</div><!-- /matrix-outer-pad -->
+
+<!-- SUMMARY -->
+<div class="summary">
+
+  <!-- Pain -->
+  <div class="acc-card acc-pain">
+    <div class="acc-header" onclick="toggleAcc(this)">
+      <div class="acc-header-left">
+        <span class="acc-eye">Main Sources of Friction</span>
+        <span class="acc-count">4 items</span>
+      </div>
+      <svg class="acc-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3,5 8,11 13,5"/></svg>
+    </div>
+    <div class="acc-body">
+      <div class="acc-body-inner">
+        <div class="acc-body-pad">
+          <div class="si"><span class="si-num">1</span><div><div class="si-title">Context-Switching Tax</div><div class="si-body">Constant movement between Fusion 360, BambuStudio, and external resources disrupts flow and creates compounding cognitive load. Every tool change is a small interruption — and they add up across the full journey.</div></div></div>
+          <div class="si"><span class="si-num">2</span><div><div class="si-title">The Steepness of the Learning Curve</div><div class="si-body">3D printing for fit and function demands knowledge that spans industrial design, manufacturing processes, and software — simultaneously. The gap between "I can model something" and "I can model something that prints correctly" is wider than most users anticipate.</div></div></div>
+          <div class="si"><span class="si-num">3</span><div><div class="si-title">The Troubleshooting Wall</div><div class="si-body">When something breaks in a parametric timeline, momentum stops completely. The path forward requires diagnosing a non-obvious root cause under frustration — and committing to fixing it properly rather than patching it. This is the single highest drop in the emotional arc, and the most likely exit point for novice users.</div></div></div>
+          <div class="si"><span class="si-num">4</span><div><div class="si-title">Scale Uncertainty</div><div class="si-body">There is no reliable way to validate the physical size of an object before committing to a print. Even with careful measurement and reference, the user is ultimately making an educated guess — and won't know if it's right until something physical exists.</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gain -->
+  <div class="acc-card acc-gain">
+    <div class="acc-header" onclick="toggleAcc(this)">
+      <div class="acc-header-left">
+        <span class="acc-eye">Biggest Opportunity Areas</span>
+        <span class="acc-count">4 items</span>
+      </div>
+      <svg class="acc-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3,5 8,11 13,5"/></svg>
+    </div>
+    <div class="acc-body">
+      <div class="acc-body-inner">
+        <div class="acc-body-pad">
+          <div class="si"><span class="si-num">1</span><div><div class="si-title">Parametric Workflows Compound in Value</div><div class="si-body">The investment in a fully parametric model pays dividends at every stage that follows — faster adjustments, cleaner troubleshooting, reliable iteration. The upfront cost is real, but the return is felt repeatedly. Any workflow that encourages or teaches parametric thinking early is high-leverage.</div></div></div>
+          <div class="si"><span class="si-num">2</span><div><div class="si-title">Progress You Can See Drives Motivation</div><div class="si-body">The highest emotional peaks in this journey coincide with moments of visible output — a form taking shape, parameters responding correctly. Making progress tangible and visible as early as possible is one of the most effective ways to sustain momentum through the harder stages.</div></div></div>
+          <div class="si"><span class="si-num">3</span><div><div class="si-title">AI as a Syntax Bridge</div><div class="si-body">When the user needed complex math in a format Fusion 360 would accept, AI resolved it in seconds. This pattern — using AI not to replace judgment but to translate between the user's intent and a tool's requirements — is repeatable and underutilized.</div></div></div>
+          <div class="si"><span class="si-num">4</span><div><div class="si-title">The Process Timeline as a Memory and Diagnostic Tool</div><div class="si-body">The ability to scroll back through a modeling timeline — step by step, operation by operation — is one of the most underappreciated features of this workflow. It isn't just a safety net for when things go wrong; it's also a record of how the model was built. When a problem surfaces three steps after its source, or when the user simply needs to remember what they did and why, the timeline makes that legible. This transparency is what makes complex models recoverable rather than disposable.</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Observations -->
+  <div class="acc-card acc-obs">
+    <div class="acc-header" onclick="toggleAcc(this)">
+      <div class="acc-header-left">
+        <span class="acc-eye">Key Takeaways</span>
+        <span class="acc-count">4 items</span>
+      </div>
+      <svg class="acc-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3,5 8,11 13,5"/></svg>
+    </div>
+    <div class="acc-body">
+      <div class="acc-body-inner">
+        <div class="acc-body-pad">
+          <div class="si"><span class="si-num">1</span><div><div class="si-title">Experience is a Hidden Prerequisite</div><div class="si-body">This workflow is navigable — but only if the user already knows what they're doing. Steps 5, 9, and 15 each represent moments where prior knowledge is load-bearing. Without it, the journey stalls. The workflow itself provides no scaffolding for the novice.</div></div></div>
+          <div class="si"><span class="si-num">2</span><div><div class="si-title">The Tools Are Not Integrated</div><div class="si-body">The round-trip between Fusion 360 and BambuStudio is manual, repetitive, and structurally unavoidable under the current toolset. Every iteration requires the same sequence of export, import, reassign, re-slice. A tighter integration — or a live preview bridge — would compress the Iteration stage significantly and reduce one of the most persistent sources of friction in the journey.</div></div></div>
+          <div class="si"><span class="si-num">3</span><div><div class="si-title">Complexity Must Be Managed, Not Avoided</div><div class="si-body">The modeling stage doesn't get hard because something goes wrong — it gets hard because the right approach requires holding more variables in mind simultaneously. Parameters reference each other, operations build on each other, and a decision made in step 5 has consequences in step 9. Managing that complexity deliberately is a skill in itself, and one the workflow demands.</div></div></div>
+          <div class="si"><span class="si-num">4</span><div><div class="si-title">Validation is a Stage This Journey Doesn't Cover — and That's a Problem</div><div class="si-body">This map ends at the moment the print is sent. But the physical result — whether it fits, functions, and meets the original intent — is where the most important feedback lives. Post-print validation is not a footnote; it's the stage that determines whether the upstream work was correct, and it directly informs what needs to change in the parametric model. Without closing that loop, the journey is incomplete. Capturing validation as a distinct stage in future iterations of this map would significantly strengthen its usefulness as a design tool.</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ── Accordion ── */
+function toggleAcc(header) {
+  header.parentElement.classList.toggle('open');
+}
+
+/* ── Drag-to-scroll ── */
+const outer = document.getElementById('matrixOuter');
+let isDown = false, startX, scrollLeft;
+outer.addEventListener('mousedown', e => {
+  isDown = true;
+  startX = e.pageX - outer.offsetLeft;
+  scrollLeft = outer.scrollLeft;
+});
+outer.addEventListener('mouseleave', () => isDown = false);
+outer.addEventListener('mouseup',    () => isDown = false);
+outer.addEventListener('mousemove',  e => {
+  if (!isDown) return;
+  e.preventDefault();
+  const x = e.pageX - outer.offsetLeft;
+  outer.scrollLeft = scrollLeft - (x - startX);
+});
+
+/* ── Emotional curve ── */
+const SCORES = [4,0,-1,1,2,3,0,-1,-4,2,4,-1,1,0,2,3];
+const GREEN  = '#a8d86e';
+const RED    = '#e07070';
+const NEU    = '#6e6a66';
+
+function scoreColor(s){ return s>0?GREEN:s<0?RED:NEU; }
+function rgba(hex,a){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function drawCurve(){
+  const canvas=document.getElementById('emotionCurve');
+  const cell=canvas.parentElement;
+  const dpr=window.devicePixelRatio||1;
+  const W=cell.offsetWidth;
+  const H=180;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W,H);
+  const n=SCORES.length;
+  const padT=24,padB=22,iH=H-padT-padB;
+  const sy=s=>padT+iH*(1-(s+5)/10);
+  const colW=W/n, sx=i=>colW*i+colW/2;
+  // zero line
+  ctx.save();
+  ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=1; ctx.setLineDash([4,5]);
+  ctx.beginPath(); ctx.moveTo(0,sy(0)); ctx.lineTo(W,sy(0)); ctx.stroke();
+  ctx.restore();
+  // fill
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(sx(0),sy(SCORES[0]));
+  for(let i=1;i<n;i++){
+    const cx=(sx(i-1)+sx(i))/2;
+    ctx.bezierCurveTo(cx,sy(SCORES[i-1]),cx,sy(SCORES[i]),sx(i),sy(SCORES[i]));
+  }
+  ctx.lineTo(sx(n-1),sy(0)); ctx.lineTo(sx(0),sy(0)); ctx.closePath();
+  const g=ctx.createLinearGradient(0,padT,0,H-padB);
+  g.addColorStop(0,rgba(GREEN,.13)); g.addColorStop(1,rgba(GREEN,0));
+  ctx.fillStyle=g; ctx.fill(); ctx.restore();
+  // segments
+  for(let i=0;i<n-1;i++){
+    const x0=sx(i),y0=sy(SCORES[i]),x1=sx(i+1),y1=sy(SCORES[i+1]),cx=(x0+x1)/2;
+    const gr=ctx.createLinearGradient(x0,0,x1,0);
+    gr.addColorStop(0,scoreColor(SCORES[i])); gr.addColorStop(1,scoreColor(SCORES[i+1]));
+    ctx.beginPath(); ctx.moveTo(x0,y0); ctx.bezierCurveTo(cx,y0,cx,y1,x1,y1);
+    ctx.strokeStyle=gr; ctx.lineWidth=2.5; ctx.stroke();
+  }
+  // dots + tags
+  SCORES.forEach((s,i)=>{
+    const x=sx(i),y=sy(s),col=scoreColor(s);
+    ctx.beginPath(); ctx.arc(x,y,8,0,Math.PI*2); ctx.fillStyle=rgba(col,.15); ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fillStyle=col; ctx.fill();
+    const str=(s>0?'+':'')+s;
+    ctx.font='500 9px "DM Mono",monospace';
+    const tw=ctx.measureText(str).width,tW=tw+10,tH=14,tR=3;
+    const tX=x-tW/2,tY=s>=0?y-tH-8:y+8;
+    ctx.beginPath(); ctx.roundRect(tX,tY,tW,tH,tR);
+    ctx.fillStyle=rgba(col,.12); ctx.fill();
+    ctx.strokeStyle=rgba(col,.4); ctx.lineWidth=0.8; ctx.stroke();
+    ctx.fillStyle=col; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(str,x,tY+tH/2);
+  });
+}
+
+window.addEventListener('load',()=>setTimeout(drawCurve,80));
+window.addEventListener('resize',drawCurve);
+</script>
+</body>
+</html>
