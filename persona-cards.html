@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Personas & Problem Statement</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  width: 1440px;
+  background: #e8e8e8;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  color: #111;
+  line-height: 1.6;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* ── Section heading ── */
+h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 16px;
+}
+
+/* ── Problem Statement ── */
+.ps-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 36px 44px;
+  display: flex;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.ps-accent {
+  width: 4px;
+  border-radius: 2px;
+  background: #111;
+  flex-shrink: 0;
+}
+
+.ps-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ps-body {
+  font-size: 16px;
+  font-weight: 400;
+  color: #333;
+  line-height: 1.75;
+}
+
+.ps-body strong {
+  color: #111;
+  font-weight: 600;
+}
+
+/* ── Persona grid ── */
+.persona-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* ── Persona card ── */
+.card {
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Card header band */
+.card-header {
+  padding: 28px 32px 24px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+.card-header.blue   { background: #dbeafe; }
+.card-header.purple { background: #ede9fe; }
+
+/* Avatar */
+.avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.avatar.blue   { background: #bfdbfe; color: #1d4ed8; }
+.avatar.purple { background: #ddd6fe; color: #6d28d9; }
+
+.header-text { flex: 1; }
+
+.persona-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.persona-role {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+.persona-role.blue   { background: #bfdbfe; color: #1d4ed8; }
+.persona-role.purple { background: #ddd6fe; color: #6d28d9; }
+
+.meta-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  font-size: 11px;
+  font-weight: 500;
+  color: #555;
+  background: rgba(0,0,0,0.06);
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+
+/* Card body */
+.card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.section {
+  padding: 20px 32px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.section p {
+  font-size: 13.5px;
+  color: #444;
+  line-height: 1.65;
+}
+
+/* Lists */
+ul.dash-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+ul.dash-list li {
+  display: flex;
+  gap: 10px;
+  font-size: 13.5px;
+  color: #444;
+  line-height: 1.5;
+}
+
+ul.dash-list li::before {
+  content: '—';
+  flex-shrink: 0;
+  font-weight: 500;
+  color: #999;
+}
+
+/* Distinction callout */
+.distinction {
+  margin: 0 32px 24px;
+  background: #f5f5f5;
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 12.5px;
+  color: #666;
+  line-height: 1.55;
+  font-style: italic;
+}
+
+/* Footer */
+footer {
+  text-align: right;
+  font-size: 12px;
+  color: #aaa;
+  font-weight: 500;
+  padding-top: 4px;
+}
+</style>
+</head>
+<body>
+
+<!-- Problem Statement -->
+<div>
+  <h2>Problem Statement</h2>
+  <div class="ps-card">
+    <div class="ps-accent"></div>
+    <div class="ps-blocks">
+      <p class="ps-body">3D printer owners can print almost anything — but only if the file already exists. When a part breaks, doesn't fit, or simply isn't available, the natural solution is to make it.</p>
+      <p class="ps-body">But getting from a clear mental image of what's needed to a printable file requires learning professional modeling software — a significant commitment that most people have no reason to make beyond a single immediate need.</p>
+      <p class="ps-body">Most people don't make that trade. They give up, pay someone else, or wait. <strong>The gap between knowing what you need and being able to make it is the opportunity.</strong></p>
+    </div>
+  </div>
+</div>
+
+<!-- Personas -->
+<div>
+  <h2>Personas</h2>
+  <div class="persona-grid">
+
+    <!-- Primary -->
+    <div class="card">
+      <div class="card-header blue">
+        <div class="avatar blue">J</div>
+        <div class="header-text">
+          <div class="persona-name">Jordan, 31 — The Printer Owner</div>
+          <div class="persona-role blue">Primary Persona</div>
+          <div class="meta-tags">
+            <span class="tag">Owns a 3D printer</span>
+            <span class="tag">1–3 years printing</span>
+            <span class="tag">Prints weekly</span>
+            <span class="tag">Self-described intermediate</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="section align-story">
+          <div class="section-title">Story</div>
+          <p>
+            Jordan is a hands-on hobbyist — RC trucks, bike mods, home projects. They've owned a 3D printer
+            for about two years and use it every week. They're comfortable with the hardware and know their
+            way around a slicer. Printing isn't the hard part.<br><br>
+            The hard part is when they need something that doesn't exist yet. A shock tower that snapped on
+            a discontinued model. A mount that fits an awkward gap. A bracket sized exactly right. Every
+            time they try to figure it out, they land on the same answer: learn CAD. And every time, it
+            feels like the wrong trade.<br><br>
+            They're not against learning. They just don't want to become a modeler. They want the part.
+          </p>
+        </div>
+
+        <div class="section align-goals">
+          <div class="section-title">Needs & Goals</div>
+          <ul class="dash-list">
+            <li>Create a custom or replacement part without learning a full modeling workflow</li>
+            <li>Keep their hobby moving without a months-long detour into new software</li>
+            <li>Get from "I know exactly what I need" to a file they can print</li>
+          </ul>
+        </div>
+
+        <div class="section align-challenges">
+          <div class="section-title">Challenges</div>
+          <ul class="dash-list">
+            <li>Every existing path to a custom part assumes you want to learn CAD — not just get the result</li>
+            <li>The learning investment feels out of proportion to the ask</li>
+            <li>When something breaks or doesn't fit, there's no quick way forward</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secondary -->
+    <div class="card">
+      <div class="card-header purple">
+        <div class="avatar purple">S</div>
+        <div class="header-text">
+          <div class="persona-name">Sam, 42 — The Access User</div>
+          <div class="persona-role purple">Secondary Persona</div>
+          <div class="meta-tags">
+            <span class="tag">No printer ownership</span>
+            <span class="tag">Library / makerspace / service</span>
+            <span class="tag">One-time need</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="section align-story">
+          <div class="section-title">Story</div>
+          <p>
+            Sam doesn't own a printer. They found out their local library has one — or stumbled across a
+            print-on-demand service — while trying to solve a specific problem. A broken appliance knob.
+            A camera mount that doesn't exist in the right size. Something they need once.<br><br>
+            They've figured out the printing side. What they can't figure out is the file. Every search
+            leads to the same place: a modeling tutorial they don't have time for, or a freelancer quote
+            that costs more than the original product.<br><br>
+            The wall isn't about hardware. It's that the only path to a file they can use runs through a
+            skill they'll never need again.
+          </p>
+        </div>
+
+        <div class="section align-goals">
+          <div class="section-title">Needs & Goals</div>
+          <ul class="dash-list">
+            <li>Solve the immediate problem and move on</li>
+            <li>Get a printable file without learning a tool they'll use once</li>
+          </ul>
+        </div>
+
+        <div class="section align-challenges">
+          <div class="section-title">Challenges</div>
+          <ul class="dash-list">
+            <li>No ongoing context to justify learning CAD — the need is one-time</li>
+            <li>Existing workarounds (freelancers, communities) add time, cost, or uncertainty</li>
+            <li>The gap between "I know what I need" and "I have a file" has no accessible bridge</li>
+          </ul>
+        </div>
+
+        <div class="distinction">
+          Jordan hits this wall repeatedly — their hobby continuously generates new needs.
+          Sam hits it once, hard, and gives up or finds a workaround.
+          Jordan is a retained user. Sam is an acquisition story.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>Burner Project &nbsp;·&nbsp; 2026-04-01</footer>
+
+<script>
+window.addEventListener('load', () => {
+  ['align-story', 'align-goals', 'align-challenges'].forEach(cls => {
+    const els = document.querySelectorAll('.' + cls);
+    const maxH = Math.max(...[...els].map(el => el.offsetHeight));
+    els.forEach(el => el.style.minHeight = maxH + 'px');
+  });
+});
+</script>
+
+</body>
+</html>
