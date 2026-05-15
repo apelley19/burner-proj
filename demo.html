@@ -1,0 +1,2603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440">
+<title>Burner — Demo</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  font-size: 13px; background: #1a1a1a; min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.app {
+  width: 1440px; height: 900px; display: flex; background: white;
+  border-radius: 10px; overflow: hidden; box-shadow: 0 16px 56px rgba(0,0,0,0.55);
+  position: relative;
+}
+
+/* ═══════════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════════ */
+.sidebar {
+  width: 210px; flex-shrink: 0; height: 100%;
+  background: #D8D8D8; border-right: 1px solid #CACACA;
+  display: flex; flex-direction: column; overflow: hidden;
+  transition: width 0.22s cubic-bezier(0.4,0,0.2,1);
+  z-index: 50;
+}
+.sidebar.compact { width: 74px; }
+
+.sb-top { height: 50px; flex-shrink: 0; display: flex; align-items: center; padding: 0 13px; }
+.sidebar.compact .sb-top { justify-content: center; padding: 0; }
+
+.sb-toggle { width: 30px; height: 30px; border-radius: 6px; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #888; flex-shrink: 0; transition: background 0.12s, color 0.12s; }
+.sb-toggle:hover { background: rgba(0,0,0,0.1); color: #444; }
+
+.sb-div { height: 1px; background: rgba(0,0,0,0.1); margin: 3px 10px; flex-shrink: 0; }
+
+/* Compact tiles */
+.sb-compact { display: none; flex-direction: column; flex: 1; padding: 4px 0; overflow: hidden; }
+.sidebar.compact .sb-compact { display: flex; }
+
+.sb-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; margin: 2px 8px; padding: 11px 6px; border-radius: 8px; background: #C8C8C8; cursor: pointer; border: 1.5px solid transparent; transition: background 0.12s, border-color 0.12s; flex-shrink: 0; user-select: none; position: relative; }
+.sb-tile:hover { background: #BEBEBE; }
+.sb-tile.active { background: #EDE9FE; border-color: #7C3AED; }
+.sb-tile-icon { color: #666; }
+.sb-tile.active .sb-tile-icon { color: #7C3AED; }
+.sb-tile-label { font-size: 9px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.07em; }
+.sb-tile.active .sb-tile-label { color: #7C3AED; }
+.sb-tile-dot { width: 6px; height: 6px; border-radius: 50%; background: #7C3AED; position: absolute; top: 8px; right: 8px; }
+.sb-tile-spacer { flex: 1; }
+
+/* Expanded sections */
+.sb-expanded { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+.sidebar.compact .sb-expanded { display: none; }
+
+.sb-scroll { flex: 1; overflow-y: auto; min-height: 0; padding: 4px 0; }
+.sb-scroll::-webkit-scrollbar { width: 4px; }
+.sb-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+
+.sb-card { margin: 2px 8px; border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+.sb-card.always-open .sb-card-body { max-height: 600px; }
+.sb-card.open .sb-card-body { max-height: 300px; }
+
+.sb-card-hdr { display: flex; align-items: center; justify-content: space-between; padding: 0 10px 0 14px; height: 38px; background: #C8C8C8; user-select: none; transition: background 0.12s; }
+.sb-card-hdr.clickable { cursor: pointer; }
+.sb-card-hdr.clickable:hover { background: #BEBEBE; }
+.sb-card-hdr.static { cursor: default; }
+.sb-card-hdr-label { font-size: 13px; font-weight: 500; color: #2a2a2a; }
+.sb-card-hdr-icon { color: #666; }
+
+.sb-card-body { max-height: 0; overflow: hidden; background: #EBEBEB; transition: max-height 0.22s cubic-bezier(0.4,0,0.2,1); }
+
+#card-profile { display: flex; flex-direction: column-reverse; flex-shrink: 0; margin: 0 8px 8px; }
+#card-profile .sb-card-hdr { background: #C8C8C8; }
+#card-profile.open .sb-card-hdr { background: #BABABA; }
+
+.sb-toolbar { display: flex; align-items: center; gap: 3px; padding: 7px 8px 5px; border-bottom: 1px solid #DEDEDE; }
+.sb-tb-btn { width: 26px; height: 26px; border-radius: 5px; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #888; font-family: inherit; transition: background 0.1s; }
+.sb-tb-btn:hover { background: rgba(0,0,0,0.07); color: #555; }
+.sb-tb-spacer { flex: 1; }
+
+.sb-row { display: flex; align-items: center; gap: 7px; padding: 0 10px 0 12px; height: 32px; cursor: pointer; transition: background 0.1s; }
+.sb-row:hover { background: rgba(0,0,0,0.05); }
+.sb-row:last-child { margin-bottom: 4px; }
+.sb-row-icon { color: #888; flex-shrink: 0; }
+.sb-row-label { flex: 1; font-size: 12px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-row-badge { font-size: 10px; font-weight: 500; color: #666; background: #DEDEDE; border-radius: 4px; padding: 1px 5px; flex-shrink: 0; }
+.sb-row-arrow { color: #aaa; font-size: 12px; flex-shrink: 0; }
+.sb-row.active-proj { background: white; border-left: 3px solid #7C3AED; padding-left: 9px; border-radius: 0 6px 6px 0; box-shadow: 0 1px 4px rgba(0,0,0,0.1); height: 34px; margin: 2px 8px 2px 0; }
+.sb-row.active-proj .sb-row-label { color: #1a1a1a; font-weight: 500; }
+.sb-row.active-proj .sb-row-badge { background: #EDE9FE; color: #7C3AED; }
+
+/* New project button in sidebar */
+.sb-new-project {
+  display: flex; align-items: center; gap: 6px;
+  margin: 4px 10px 8px; padding: 7px 14px;
+  background: white; border: 1.5px solid #C4B5FD; border-radius: 7px;
+  font-family: inherit; font-size: 12px; font-weight: 600; color: #7C3AED;
+  cursor: pointer; transition: background 0.1s; width: calc(100% - 20px);
+}
+.sb-new-project:hover { background: #EDE9FE; }
+
+/* ═══════════════════════════════════════════════
+   MAIN WRAPPER
+═══════════════════════════════════════════════ */
+#main-wrapper {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════
+   SHARED PHASE BAR
+═══════════════════════════════════════════════ */
+#shared-phase-bar {
+  height: 52px; flex-shrink: 0;
+  display: flex; align-items: center;
+  border-bottom: 1px solid #EBEBEB;
+  padding: 0 16px;
+}
+[data-mode="home"] #shared-phase-bar { display: none; }
+
+.shared-phase-pill {
+  display: flex; border: 1.5px solid #E2E2E2;
+  border-radius: 30px; overflow: hidden; background: white;
+  min-width: 440px; margin: 0 auto;
+}
+.shared-phase-step {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  gap: 7px; padding: 9px 24px; font-size: 13px; font-weight: 500;
+  color: #C0C0C0; user-select: none;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+.shared-phase-step + .shared-phase-step { border-left: 1.5px solid #E2E2E2; }
+.shared-phase-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+/* Phase active states — driven by data-phase attribute */
+[data-phase="plan"]   #phase-plan   { background: #EDE9FE; color: #7C3AED; }
+[data-phase="design"] #phase-design { background: #EDE9FE; color: #7C3AED; }
+[data-phase="print"]  #phase-plan   { color: #888; }
+[data-phase="print"]  #phase-design { color: #888; }
+[data-phase="print"]  #phase-print  { background: #EDE9FE; color: #7C3AED; }
+
+/* Phase pill navigation — unlocked pills show as clickable */
+.shared-phase-step.unlocked:not(.active-phase) { cursor: pointer; }
+.shared-phase-step.unlocked:not(.active-phase):hover { background: rgba(124,58,237,0.06); }
+
+/* ═══════════════════════════════════════════════
+   MODE SECTIONS
+═══════════════════════════════════════════════ */
+.mode { display: none; flex: 1; min-height: 0; overflow: hidden; opacity: 0; transition: opacity 0.22s ease; }
+.mode.active { display: flex; flex-direction: column; }
+.mode.visible { opacity: 1; }
+
+/* ═══════════════════════════════════════════════
+   HOME MODE
+═══════════════════════════════════════════════ */
+#mode-home { position: relative; }
+
+.home-main { flex: 1; min-width: 0; position: relative; overflow: hidden; }
+.home-view { position: absolute; inset: 0; display: none; background: white; }
+.home-view.active { display: flex; }
+
+#view-home {
+  flex-direction: column; align-items: center; justify-content: center;
+  gap: 28px; padding: 60px 48px;
+}
+.home-title { font-size: 28px; font-weight: 600; color: #161616; letter-spacing: -0.5px; }
+
+.prompt-box {
+  width: 100%; max-width: 580px;
+  border: 1.5px solid #D6D6D6; border-radius: 14px; overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.prompt-box:focus-within { border-color: #B0B0B0; box-shadow: 0 0 0 3px rgba(0,0,0,0.04); }
+
+.prompt-input { display: block; width: 100%; padding: 14px 16px 12px; border: none; outline: none; font-size: 14px; color: #1a1a1a; font-family: inherit; background: transparent; resize: none; line-height: 1.5; }
+.prompt-input::placeholder { color: #C0C0C0; }
+.prompt-divider { height: 1px; background: #EFEFEF; }
+.prompt-bar { display: flex; align-items: center; gap: 6px; padding: 7px 10px; }
+.prompt-attach { width: 28px; height: 28px; border-radius: 7px; border: none; background: transparent; font-size: 19px; color: #CCC; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color 0.1s, background 0.1s; flex-shrink: 0; }
+.prompt-attach:hover { color: #999; background: #F5F5F5; }
+.pb-spacer { flex: 1; }
+.model-pill { display: flex; align-items: center; gap: 4px; padding: 5px 10px; border: 1px solid #DDD; border-radius: 6px; font-size: 12px; color: #555; background: #F8F8F8; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: background 0.1s; }
+.model-pill:hover { background: #F0F0F0; }
+
+/* "New project" CTA — replaces the up-arrow send button on home */
+.home-new-project-btn {
+  height: 30px; border-radius: 8px; border: none;
+  background: #7C3AED; color: white; cursor: pointer;
+  display: flex; align-items: center; padding: 0 14px;
+  font-family: inherit; font-size: 12px; font-weight: 600;
+  flex-shrink: 0; transition: opacity 0.12s;
+}
+.home-new-project-btn:hover { opacity: 0.85; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; width: 100%; max-width: 580px; }
+.chip { padding: 5px 13px; border-radius: 20px; background: #F2F2F2; color: #555; font-size: 12px; cursor: pointer; border: 1px solid #EAEAEA; white-space: nowrap; user-select: none; transition: all 0.12s; }
+.chip:hover { background: #EBEBEB; border-color: #DDD; }
+.chip.sel { background: #EDE9FE; color: #7C3AED; border-color: #C4B5FD; }
+
+/* Home sub-views (recents, printer, settings) */
+.view-head { padding: 0 32px; height: 64px; border-bottom: 1px solid #EBEBEB; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+.view-back { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #aaa; cursor: pointer; padding: 5px 8px; border-radius: 6px; border: none; background: transparent; font-family: inherit; transition: background 0.1s, color 0.1s; }
+.view-back:hover { background: #F5F5F5; color: #555; }
+.view-title { font-size: 20px; font-weight: 600; color: #1a1a1a; }
+#view-recents { flex-direction: column; overflow-y: auto; }
+.file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px,1fr)); gap: 16px; padding: 28px 32px; }
+.file-card { border: 1.5px solid #EBEBEB; border-radius: 10px; overflow: hidden; cursor: pointer; transition: border-color 0.12s, box-shadow 0.12s; }
+.file-card:hover { border-color: #C4B5FD; box-shadow: 0 2px 14px rgba(124,58,237,0.08); }
+.file-thumb { background: #F5F5F5; height: 148px; display: flex; align-items: center; justify-content: center; }
+.file-meta { padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #EBEBEB; }
+.file-name { font-size: 12px; font-weight: 500; color: #333; }
+.file-ver { font-size: 10px; color: #888; background: #F0F0F0; border-radius: 4px; padding: 2px 6px; }
+#view-printer { flex-direction: column; overflow-y: auto; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 28px 32px; }
+.detail-col-full { grid-column: 1 / -1; }
+.detail-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: #AAA; margin-bottom: 10px; }
+.detail-box { border: 1.5px solid #EBEBEB; border-radius: 10px; height: 160px; background: #FAFAFA; }
+#view-settings { overflow: hidden; }
+.settings-wrap { display: flex; height: 100%; }
+.settings-nav { width: 180px; border-right: 1px solid #EBEBEB; padding: 20px 12px; display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+.settings-nav-item { padding: 7px 12px; border-radius: 6px; font-size: 13px; color: #555; cursor: pointer; transition: background 0.1s; user-select: none; }
+.settings-nav-item:hover { background: #F5F5F5; }
+.settings-nav-item.on { background: #EDE9FE; color: #7C3AED; font-weight: 500; }
+.settings-body { flex: 1; overflow-y: auto; padding: 28px 32px; display: flex; flex-direction: column; gap: 28px; }
+.settings-section-title { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 10px; }
+.settings-box { border: 1.5px solid #EBEBEB; border-radius: 10px; height: 100px; background: #FAFAFA; }
+
+/* ═══════════════════════════════════════════════
+   PLAN MODE
+═══════════════════════════════════════════════ */
+#mode-plan { position: relative; }
+
+.plan-screen { position: absolute; inset: 0; display: none; flex-direction: column; background: white; }
+.plan-screen.active { display: flex; }
+
+/* Left floating card column — overlays chat area */
+.plan-left-cards {
+  position: absolute; top: 18px; left: 18px; width: 240px;
+  display: flex; flex-direction: column; gap: 10px;
+  z-index: 20;
+}
+
+/* Plan chat + input */
+.plan-chat-section { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; padding-left: 276px; }
+.plan-chat-area { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+.plan-chat-area::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 52px; background: linear-gradient(to bottom, white 15%, rgba(255,255,255,0)); pointer-events: none; z-index: 5; }
+.plan-chat-msgs { height: 100%; overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 32px 32px 16px; }
+.plan-chat-msgs::-webkit-scrollbar { width: 4px; }
+.plan-chat-msgs::-webkit-scrollbar-thumb { background: #e8e8e8; border-radius: 2px; }
+.plan-chat-col { width: 100%; max-width: 800px; }
+.plan-chat-input-wrap { flex-shrink: 0; padding: 12px 32px 16px; display: flex; justify-content: center; border-top: 1px solid #EBEBEB; background: white; }
+
+/* Plan message styles */
+.msg-user { display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 20px; }
+.msg-ai { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 18px; }
+.msg-sender { font-size: 10px; color: #C0C0C0; margin-bottom: 5px; padding: 0 2px; }
+.bubble-user { max-width: 75%; background: #EAEAEA; padding: 10px 15px; border-radius: 14px 14px 4px 14px; font-size: 13px; color: #1a1a1a; line-height: 1.55; }
+.ai-text { max-width: 90%; font-size: 13px; color: #2a2a2a; line-height: 1.7; }
+.ai-thinking { display: inline-flex; align-items: center; gap: 8px; padding: 7px 13px; border: 1.5px dashed #D8D8D8; border-radius: 8px; font-size: 12px; color: #BDBDBD; margin-top: 4px; }
+
+/* Plan prompt/exp input boxes */
+.p-box, .exp-input {
+  width: 100%; max-width: 800px;
+  border: 1.5px solid #D6D6D6; border-radius: 12px;
+  overflow: hidden; background: white; transition: border-color 0.15s;
+}
+.p-box:focus-within, .exp-input:focus-within { border-color: #B0B0B0; }
+.p-input { display: block; width: 100%; padding: 12px 16px 10px; border: none; outline: none; font-size: 14px; color: #1a1a1a; font-family: inherit; background: transparent; resize: none; }
+.p-input::placeholder { color: #C4C4C4; }
+.p-divider { height: 1px; background: #F0F0F0; }
+.p-bar { display: flex; align-items: center; gap: 6px; padding: 7px 10px; background: white; }
+.p-attach, .exp-attach { width: 28px; height: 28px; border-radius: 7px; border: none; background: transparent; font-size: 19px; color: #CCC; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color 0.1s; }
+.p-attach:hover, .exp-attach:hover { color: #999; }
+.p-gap { flex: 1; }
+.send-btn { width: 30px; height: 30px; border-radius: 8px; border: 1.5px solid #7C3AED; background: white; color: #7C3AED; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.12s, color 0.12s; }
+.send-btn:hover { background: #EDE9FE; }
+.send-btn.active { background: #7C3AED; color: white; border-color: #7C3AED; }
+.send-btn.active:hover { background: #6D28D9; }
+.send-btn.off { background: #F0F0F0; border-color: #D8D8D8; color: #C0C0C0; cursor: not-allowed; }
+.skip-btn { padding: 6px 13px; border-radius: 7px; border: 1.5px solid #DDD; background: transparent; font-size: 12px; font-weight: 500; color: #888; cursor: pointer; font-family: inherit; transition: background 0.1s; }
+.skip-btn:hover { background: #F5F5F5; }
+
+/* Exp-input sub-parts */
+.exp-title { padding: 13px 16px 12px; font-size: 13px; font-weight: 600; color: #1a1a1a; border-bottom: 1px solid #F0F0F0; background: white; }
+.exp-body { display: flex; gap: 0; padding: 16px 14px 14px; background: white; }
+.q-nav { display: flex; flex-direction: column; gap: 5px; margin-right: 12px; padding-top: 2px; flex-shrink: 0; }
+.q-nav-btn { width: 28px; height: 28px; border-radius: 6px; border: none; background: #E4E4E4; font-size: 11px; font-weight: 600; color: #999; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; transition: background 0.12s, color 0.12s; }
+.q-nav-btn:hover { background: #D8D8D8; }
+.q-nav-btn.on { background: #7C3AED; color: white; }
+.q-nav-btn.answered { background: #D4D4D4; color: #666; }
+.q-cards { flex: 1; display: flex; gap: 8px; }
+.q-opt { flex: 1; border: 1.5px solid #E8E8E8; border-radius: 9px; padding: 12px 10px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; background: white; transition: border-color 0.12s, background 0.12s; user-select: none; }
+.q-opt:hover { border-color: #9B72F0; background: #FDFBFF; }
+.q-opt.sel { border-color: #7C3AED; background: #EDE9FE; }
+.q-opt-icon { width: 100%; flex: 1; border-radius: 7px; background: #F4F4F4; display: flex; align-items: center; justify-content: center; color: #777; min-height: 100px; transition: background 0.12s, color 0.12s; }
+.q-opt.sel .q-opt-icon { background: #DDD6FE; color: #7C3AED; }
+.q-opt-label { font-size: 11px; font-weight: 500; color: #555; text-align: center; }
+.q-opt.sel .q-opt-label { color: #7C3AED; }
+.q-opt-label.alt { color: #BBB; font-style: italic; font-weight: 400; }
+.q-opt.sel .q-opt-label.alt { color: #9B72F0; }
+.q-meas { flex: 1; border: 1.5px solid #E8E8E8; border-radius: 9px; padding: 12px 10px 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; background: white; }
+.q-meas.focused { border-color: #7C3AED; }
+.q-meas-icon { width: 100%; flex: 1; border-radius: 7px; background: #F4F4F4; display: flex; align-items: center; justify-content: center; color: #777; min-height: 68px; }
+.q-meas-label { font-size: 11px; font-weight: 500; color: #999; align-self: flex-start; }
+.q-meas-row { width: 100%; display: flex; gap: 4px; }
+.q-meas-input { flex: 1; padding: 5px 8px; border: 1.5px solid #E4E4E4; border-radius: 6px; font-size: 12px; color: #1a1a1a; font-family: inherit; outline: none; background: white; transition: border-color 0.15s; }
+.q-meas-input.filled { border-color: #7C3AED; }
+.q-meas-input::placeholder { color: #D0D0D0; }
+.q-meas-unit { padding: 5px 8px; background: #F4F4F4; border: 1.5px solid #E4E4E4; border-radius: 6px; font-size: 11px; color: #999; white-space: nowrap; flex-shrink: 0; }
+.exp-notes { padding: 0 14px 9px; background: white; }
+.exp-notes-input { width: 100%; padding: 7px 12px; border: none; border-radius: 7px; background: #F7F7F7; font-size: 12px; color: #555; font-family: inherit; outline: none; }
+.exp-notes-input::placeholder { color: #C8C8C8; }
+.exp-actions { display: flex; align-items: center; gap: 6px; padding: 7px 10px; border-top: 1px solid #F0F0F0; background: white; }
+
+/* Gate card (ps7) */
+.gate-card { width: 100%; max-width: 640px; border: 1.5px solid #E4E4E4; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 18px rgba(0,0,0,0.06); margin-top: 4px; margin-bottom: 8px; }
+.gate-preview { background: #F6F6F6; border-bottom: 1px solid #EBEBEB; overflow: hidden; line-height: 0; }
+.gate-features { padding: 12px 16px 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+.gate-pill { padding: 6px 12px; border: 1.5px solid #E4E4E4; border-radius: 999px; font-size: 11px; color: #444; background: #FAFAFA; white-space: nowrap; }
+.opt-list { display: flex; flex-direction: column; gap: 7px; padding: 12px 14px 8px; background: white; }
+.opt-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1.5px solid #E8E8E8; border-radius: 9px; background: white; cursor: pointer; font-family: inherit; transition: border-color 0.12s, background 0.12s; }
+.opt-row:hover { border-color: #B0B0B0; background: #FAFAFA; }
+.opt-row.sel { border-color: #7C3AED; background: #EDE9FE; }
+.opt-num { width: 24px; height: 24px; border-radius: 6px; background: #F0F0F0; color: #888; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.opt-row.sel .opt-num { background: white; color: #7C3AED; border: 1.5px solid #7C3AED; }
+.opt-text { font-size: 13px; color: #1a1a1a; }
+.opt-row.sel .opt-text { color: #7C3AED; font-weight: 500; }
+
+/* ── PLAN → DESIGN MORPH (ps7) ── */
+.plan-screen .shared-phase-step { transition: background 300ms ease 500ms, color 300ms ease 500ms; }
+
+.s7-viewport { flex: 0 1 0; min-width: 0; overflow: hidden; transition: flex-grow 400ms cubic-bezier(0.4,0,0.2,1) 250ms; }
+.s7-viewport > * { opacity: 0; transition: opacity 200ms ease 700ms; }
+#ps7.is-design-mode .s7-viewport { flex-grow: 2; }
+#ps7.is-design-mode .s7-viewport > * { opacity: 1; }
+
+.ps7-vp-divider { width: 0; flex-shrink: 0; position: relative; cursor: default; background: transparent; transition: width 300ms ease 350ms; }
+#ps7.is-design-mode .ps7-vp-divider { width: 6px; cursor: col-resize; }
+.ps7-vp-divider::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 3px; height: 36px; border-radius: 2px; background: #D0D0D0; opacity: 0; transition: opacity 150ms ease; }
+#ps7.is-design-mode .ps7-vp-divider:hover::before { opacity: 1; }
+
+#ps7 .plan-chat-section { transition: flex-grow 400ms cubic-bezier(0.4,0,0.2,1) 250ms; position: relative; }
+#ps7.is-design-mode .plan-chat-section { flex-grow: 1; }
+
+#ps7 .ps7-plan-view { flex: 1; min-height: 0; display: flex; flex-direction: column; opacity: 1; transition: opacity 250ms ease 600ms; }
+#ps7.is-design-mode .ps7-plan-view { opacity: 0; pointer-events: none; }
+
+#ps7 .ps7-design-view { position: absolute; inset: 0; display: flex; flex-direction: column; background: white; opacity: 0; pointer-events: none; transition: opacity 250ms ease 600ms; }
+#ps7.is-design-mode .ps7-design-view { opacity: 1; pointer-events: auto; }
+
+#ps7.skip-anim .s7-viewport,
+#ps7.skip-anim .s7-viewport > *,
+#ps7.skip-anim .ps7-vp-divider,
+#ps7.skip-anim .plan-chat-section,
+#ps7.skip-anim .ps7-plan-view,
+#ps7.skip-anim .ps7-design-view { transition: none !important; }
+
+/* Plan viewport loading area */
+.plan-viewport-area { flex: 1; min-width: 0; background: linear-gradient(180deg, #F8F8F8 0%, #EFEFEF 100%); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.plan-viewport-grid { position: absolute; inset: 0; opacity: 0.4; background-image: linear-gradient(to right, #E0E0E0 1px, transparent 1px), linear-gradient(to bottom, #E0E0E0 1px, transparent 1px); background-size: 40px 40px; }
+.viewport-loading-plan { position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.viewport-cubes { animation: cube-spin 6s linear infinite; }
+.viewport-status { font-size: 12px; color: #999; letter-spacing: 0.02em; }
+@keyframes cube-spin { to { transform: rotate(360deg); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes hover-fade { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
+
+/* Plan right-sidebar (ps7 only, collapses during morph) */
+#ps7 .ps7-right-sidebar { width: 296px; flex-shrink: 0; background: #FAFAFA; border-left: 1px solid #EBEBEB; overflow: hidden; transition: width 250ms cubic-bezier(0.4,0,0.2,1) 0ms, border-left-width 250ms ease 0ms; }
+#ps7.is-design-mode .ps7-right-sidebar { width: 0; border-left-width: 0; }
+.ps7-r-inner { width: 296px; height: 100%; overflow-y: auto; padding: 16px 14px; display: flex; flex-direction: column; gap: 12px; }
+
+/* Plan left card content */
+.r-status { display: flex; align-items: center; gap: 9px; padding: 9px 12px; font-size: 12px; font-weight: 500; border-radius: 7px; border-left: 3px solid transparent; }
+.r-status.open { background: #FFFBEB; color: #92400E; border-left-color: #F59E0B; }
+.r-status.done { background: #F0FDF4; color: #065F46; border-left-color: #10B981; }
+.r-status.loading { color: #999; background: #F7F7F7; border-left-color: #D0D0D0; }
+.r-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.r-status.open .r-status-dot { background: #F59E0B; }
+.r-status.done .r-status-dot { background: #10B981; }
+.r-status.loading .r-status-dot { background: #C8C8C8; }
+.r-list { display: flex; flex-direction: column; gap: 5px; }
+.r-list-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #444; }
+.r-list-bullet { width: 4px; height: 4px; border-radius: 50%; background: #B0B0B0; flex-shrink: 0; }
+.r-card-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #999; }
+.r-card-body { padding: 4px 14px 14px; }
+
+/* ═══════════════════════════════════════════════
+   SHARED FLOATING CARD STYLE (design + print + plan)
+═══════════════════════════════════════════════ */
+.vp-card { border: 1.5px solid #E0E0E0; border-radius: 10px; background: rgba(255,255,255,0.96); backdrop-filter: blur(8px); box-shadow: 0 2px 14px rgba(0,0,0,0.06); overflow: hidden; }
+.vp-card-head { display: flex; align-items: center; justify-content: space-between; padding: 9px 13px 7px; border-bottom: 1px solid #F0F0F0; }
+.vp-card-title { font-size: 12px; font-weight: 600; color: #1a1a1a; }
+.vp-card-meta { font-size: 10px; color: #999; font-weight: 500; }
+.vp-card-body { padding: 8px 10px 10px; }
+
+/* Phase CTA — consistent across all modes */
+.phase-cta {
+  width: 100%; padding: 10px 14px;
+  background: #7C3AED; color: white;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  border: none; border-radius: 8px; cursor: pointer;
+  transition: background 0.12s, opacity 0.12s;
+  text-align: center;
+}
+.phase-cta:hover { background: #6D28D9; }
+.phase-cta:disabled { background: #DCDCDC; color: #A0A0A0; cursor: not-allowed; }
+
+/* ═══════════════════════════════════════════════
+   DESIGN MODE
+═══════════════════════════════════════════════ */
+#mode-design { }
+
+.design-workspace { flex: 1; min-height: 0; display: flex; overflow: hidden; }
+
+.design-viewport-area {
+  flex: 2 1 0; min-width: 0; position: relative; overflow: hidden;
+  background: linear-gradient(180deg, #F8F8F8 0%, #EEEEEE 100%);
+}
+.design-viewport-grid { position: absolute; inset: 0; opacity: 0.4; background-image: linear-gradient(to right, #E0E0E0 1px, transparent 1px), linear-gradient(to bottom, #E0E0E0 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; }
+#design-vp-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; outline: none; }
+
+.design-viewport-loading {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  background: linear-gradient(180deg, rgba(248,248,248,0.92) 0%, rgba(238,238,238,0.92) 100%);
+  z-index: 6; pointer-events: none; transition: opacity 0.25s;
+}
+#mode-design.state-complete .design-viewport-loading,
+#mode-design.state-modified .design-viewport-loading { opacity: 0; pointer-events: none; }
+
+.design-vp-cards { position: absolute; top: 18px; left: 18px; display: flex; flex-direction: column; gap: 12px; z-index: 10; width: 234px; }
+
+/* Body list */
+.body-row { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; cursor: pointer; transition: background 0.1s, opacity 0.15s; user-select: none; }
+.body-row:hover { background: #F5F5F5; }
+.body-row.hidden { opacity: 0.4; }
+.body-eye { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; color: #666; flex-shrink: 0; }
+.body-label { font-size: 12px; color: #333; flex: 1; }
+
+/* Skeleton */
+.skeleton-line, .skeleton-block { background: linear-gradient(90deg, #EEEEEE 0%, #F6F6F6 50%, #EEEEEE 100%); background-size: 200% 100%; animation: skel-shimmer 1.4s ease-in-out infinite; border-radius: 4px; }
+.skeleton-line { height: 10px; margin: 7px 0; }
+.skeleton-line.short { width: 60%; }
+.skeleton-line.med { width: 80%; }
+.skeleton-line.full { width: 100%; }
+.skeleton-block { height: 28px; margin: 8px 0; }
+@keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* State-driven visibility (scoped to #mode-design) */
+#mode-design:not(.state-generating) .for-generating { display: none !important; }
+#mode-design.state-generating .for-complete:not(.for-modified),
+#mode-design.state-generating .for-modified:not(.for-complete),
+#mode-design.state-generating .for-complete.for-modified { display: none !important; }
+#mode-design.state-complete .for-modified:not(.for-complete) { display: none !important; }
+#mode-design.state-modified .for-complete:not(.for-modified) { display: none !important; }
+
+/* Param sliders */
+.param-row { padding: 8px 4px; }
+.param-row + .param-row { border-top: 1px solid #F4F4F4; }
+.param-label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.param-label { font-size: 11px; font-weight: 500; color: #555; }
+.param-val { font-size: 11px; color: #7C3AED; font-weight: 500; font-variant-numeric: tabular-nums; }
+.param-val.dirty { color: #D97706; }
+.slider { position: relative; height: 14px; cursor: pointer; user-select: none; }
+.slider-track { position: absolute; left: 0; right: 0; top: 6px; height: 3px; border-radius: 2px; background: #E4E4E4; }
+.slider-fill { position: absolute; left: 0; top: 6px; height: 3px; border-radius: 2px; background: #7C3AED; }
+.slider-thumb { position: absolute; top: 0; width: 14px; height: 14px; border-radius: 50%; background: white; border: 1.5px solid #7C3AED; transform: translateX(-50%); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 4px; border-top: 1px solid #F4F4F4; }
+.toggle-label { font-size: 11px; font-weight: 500; color: #555; }
+.toggle { width: 32px; height: 18px; border-radius: 9px; background: #D8D8D8; position: relative; cursor: pointer; transition: background 0.18s; }
+.toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.2); transition: left 0.18s; }
+.toggle.on { background: #7C3AED; }
+.toggle.on::after { left: 16px; }
+.param-actions { display: flex; gap: 6px; padding: 8px 4px 2px; margin-top: 6px; border-top: 1px solid #F0F0F0; }
+.param-action { flex: 1; padding: 6px 10px; border-radius: 6px; border: 1.5px solid #D6D6D6; background: white; font-family: inherit; font-size: 11px; font-weight: 500; color: #555; cursor: pointer; transition: background 0.1s; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.param-action:hover { background: #F5F5F5; border-color: #B0B0B0; }
+.param-action:disabled { color: #BBB; cursor: not-allowed; background: #FAFAFA; border-color: #E8E8E8; }
+.param-action.primary { background: #7C3AED; color: white; border-color: #7C3AED; }
+.param-action.primary:hover { background: #6D28D9; }
+.param-action.primary:disabled { background: #DCDCDC; border-color: #DCDCDC; }
+.param-version { margin-top: 8px; padding-top: 8px; border-top: 1px solid #F0F0F0; font-size: 10px; color: #999; display: flex; justify-content: space-between; align-items: center; }
+.param-version-tag { background: #EDE9FE; color: #7C3AED; padding: 2px 7px; border-radius: 4px; font-weight: 600; letter-spacing: 0.04em; }
+.param-version-tag.dirty { background: #FEF3C7; color: #92400E; }
+
+/* Design nav cube */
+.design-nav-cube-wrap { position: absolute; top: 14px; right: 14px; z-index: 10; width: 108px; height: 108px; }
+#design-nav-canvas { width: 108px; height: 108px; cursor: pointer; outline: none; display: block; }
+
+/* Design toolbar */
+.design-vp-toolbar { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; align-items: center; gap: 4px; padding: 5px; background: rgba(255,255,255,0.95); border: 1.5px solid #E0E0E0; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.tb-btn { width: 38px; height: 32px; border: none; background: transparent; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #555; cursor: pointer; transition: background 0.1s, color 0.1s; }
+.tb-btn:hover { background: #F0F0F0; color: #1a1a1a; }
+.tb-btn.active { background: #EDE9FE; color: #7C3AED; }
+
+/* Resizable divider */
+.vp-divider { width: 6px; flex-shrink: 0; cursor: col-resize; position: relative; background: transparent; }
+.vp-divider::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 3px; height: 36px; border-radius: 2px; background: #D0D0D0; opacity: 0; transition: opacity 0.15s; }
+.vp-divider:hover::before { opacity: 1; }
+.vp-divider.dragging::before { opacity: 1; background: #7C3AED; }
+
+/* Design chat sidebar */
+.design-chat-sidebar { flex: 0 0 320px; min-width: 320px; max-width: 540px; display: flex; flex-direction: column; background: white; border-left: 1px solid #EBEBEB; overflow: hidden; }
+.cs-msgs { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 10px; }
+.cs-msgs::-webkit-scrollbar { width: 4px; }
+.cs-msgs::-webkit-scrollbar-thumb { background: #e8e8e8; border-radius: 2px; }
+.cs-input-wrap { flex-shrink: 0; padding: 10px 14px 14px; border-top: 1px solid #EBEBEB; background: white; }
+
+.summary-chip { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #F5F5F5; border: 1px solid #EBEBEB; border-radius: 8px; cursor: pointer; transition: background 0.12s; }
+.summary-chip:hover { background: #EFEFEF; }
+.summary-chip-icon { color: #888; flex-shrink: 0; }
+.summary-chip-label { font-size: 11px; font-weight: 600; color: #555; }
+.summary-chip-text { font-size: 11px; color: #999; flex: 1; }
+.summary-chip-chev { color: #B0B0B0; font-size: 10px; }
+
+.preview-card { border: 1.5px solid #E4E4E4; border-radius: 10px; overflow: hidden; background: white; }
+.preview-card-img { background: #F6F6F6; padding: 8px; display: flex; align-items: center; justify-content: center; }
+.preview-card-meta { padding: 8px 12px; font-size: 11px; color: #888; border-top: 1px solid #F0F0F0; }
+.preview-card-title { font-weight: 600; color: #444; margin-bottom: 2px; }
+
+.cs-msg-user { display: flex; flex-direction: column; align-items: flex-end; }
+.cs-msg-ai { display: flex; flex-direction: column; align-items: flex-start; }
+.cs-bubble-user { background: #EAEAEA; padding: 9px 13px; border-radius: 13px 13px 4px 13px; font-size: 12.5px; color: #1a1a1a; line-height: 1.5; max-width: 90%; }
+.cs-text { font-size: 12.5px; color: #2a2a2a; line-height: 1.6; max-width: 100%; padding: 2px; }
+.cs-sender { font-size: 10px; color: #C0C0C0; margin-bottom: 4px; padding: 0 2px; }
+
+.status-pill { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border: 1.5px solid #BBF7D0; background: #F0FDF4; border-radius: 999px; font-size: 12px; font-weight: 500; color: #047857; align-self: flex-start; }
+.status-pill-dot { width: 6px; height: 6px; border-radius: 50%; background: #10B981; }
+
+.version-card { align-self: stretch; border: 1.5px solid #DDD6FE; border-radius: 10px; background: #F5F3FF; overflow: hidden; }
+.version-card-head { display: flex; align-items: center; gap: 8px; padding: 9px 13px; border-bottom: 1px solid #E9E3FE; }
+.version-card-icon { color: #7C3AED; }
+.version-card-title { font-size: 12px; font-weight: 600; color: #5B21B6; flex: 1; }
+.version-card-tag { background: white; color: #7C3AED; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.version-card-body { padding: 10px 13px 12px; }
+.version-card-diff { font-size: 11px; color: #6D28D9; line-height: 1.55; }
+.version-card-diff-row { display: flex; gap: 8px; }
+.version-card-diff-row + .version-card-diff-row { margin-top: 3px; }
+.version-card-diff-key { color: #8B6BC4; min-width: 80px; }
+.version-card-diff-val { color: #4C1D95; font-weight: 500; }
+.version-card-diff-old { color: #B8B8C8; text-decoration: line-through; margin-right: 5px; }
+
+.cs-prompt { border: 1.5px solid #D6D6D6; border-radius: 10px; background: white; overflow: hidden; }
+.cs-prompt-input { display: block; width: 100%; padding: 9px 12px; border: none; outline: none; font-family: inherit; font-size: 13px; color: #1a1a1a; background: transparent; }
+.cs-prompt-input::placeholder { color: #C4C4C4; }
+.cs-prompt-bar { display: flex; align-items: center; gap: 4px; padding: 5px 7px; border-top: 1px solid #F0F0F0; }
+.p-attach-sm { width: 28px; height: 28px; border-radius: 7px; border: none; background: transparent; font-size: 19px; color: #CCC; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.cs-prompt.disabled { border-color: #EBEBEB; background: #F7F7F7; cursor: not-allowed; }
+.cs-prompt.disabled .cs-prompt-input { color: #B8B8B8; cursor: not-allowed; }
+.cs-prompt.disabled .cs-prompt-input::placeholder { color: #C8C8C8; font-style: italic; }
+.cs-prompt.disabled .cs-prompt-bar { border-top-color: #EBEBEB; }
+
+/* ═══════════════════════════════════════════════
+   PRINT MODE
+═══════════════════════════════════════════════ */
+#mode-print { }
+
+.print-workspace { flex: 1; min-height: 0; display: flex; overflow: hidden; }
+
+.print-viewport-area { flex: 2 1 0; min-width: 0; position: relative; overflow: hidden; background: linear-gradient(180deg, #F8F8F8 0%, #EEEEEE 100%); }
+.print-viewport-grid { position: absolute; inset: 0; opacity: 0.4; background-image: linear-gradient(to right, #E0E0E0 1px, transparent 1px), linear-gradient(to bottom, #E0E0E0 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; }
+#print-vp-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; outline: none; }
+
+.print-viewport-loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: linear-gradient(180deg, rgba(248,248,248,0.92) 0%, rgba(238,238,238,0.92) 100%); z-index: 6; pointer-events: none; transition: opacity 0.45s; }
+#mode-print.intro-done .print-viewport-loading { opacity: 0; }
+
+.print-vp-cards { position: absolute; top: 18px; left: 18px; display: flex; flex-direction: column; gap: 12px; z-index: 10; width: 254px; }
+
+/* Print state-driven visibility */
+#mode-print:not(.state-arranged) .for-arranged { display: none !important; }
+#mode-print:not(.state-analyzed):not(.state-iterated):not(.state-stale) .for-analyzed { display: none !important; }
+#mode-print:not(.state-iterated) .for-iterated { display: none !important; }
+#mode-print:not(.state-stale) .for-stale { display: none !important; }
+
+/* Parts list */
+.part-row { display: flex; align-items: center; gap: 8px; padding: 6px 6px; border-radius: 6px; cursor: pointer; transition: background 0.1s; user-select: none; }
+.part-row:hover { background: #F5F5F5; }
+.part-row.hidden { opacity: 0.4; }
+.part-row.focused { background: #EDE9FE; }
+.part-eye { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; color: #888; flex-shrink: 0; }
+.part-label { font-size: 12px; color: #333; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.part-status { display: inline-flex; align-items: center; gap: 5px; font-size: 9px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 7px 2px 6px; border-radius: 999px; flex-shrink: 0; }
+.part-status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.part-status[data-status="unprocessed"] { background: #EFEFEF; color: #888; }
+.part-status[data-status="unprocessed"] .part-status-dot { background: #B0B0B0; }
+.part-status[data-status="ok"] { background: #ECFDF5; color: #047857; }
+.part-status[data-status="ok"] .part-status-dot { background: #10B981; }
+.part-status[data-status="review"] { background: #FFFBEB; color: #B45309; }
+.part-status[data-status="review"] .part-status-dot { background: #F59E0B; }
+.part-status[data-status="blocked"] { background: #FEF2F2; color: #B91C1C; }
+.part-status[data-status="blocked"] .part-status-dot { background: #DC2626; }
+#mode-print.state-stale .part-status { opacity: 0.5; }
+
+/* Printer floating card */
+.printer-card .vp-card-head { padding: 8px 12px 7px; }
+.printer-card-body { display: flex; align-items: center; gap: 10px; padding: 9px 12px 10px; }
+.printer-card-icon { width: 32px; height: 32px; border-radius: 7px; background: #F4F4F4; border: 1px solid #E4E4E4; display: flex; align-items: center; justify-content: center; color: #555; flex-shrink: 0; position: relative; }
+.printer-card-status-dot { position: absolute; top: -2px; right: -2px; width: 9px; height: 9px; border-radius: 50%; background: #10B981; border: 1.5px solid white; }
+.printer-card-info { flex: 1; min-width: 0; }
+.printer-card-name { font-size: 12px; font-weight: 600; color: #1a1a1a; }
+.printer-card-vol { font-size: 10px; color: #999; margin-top: 1px; }
+.printer-card-link { font-size: 10px; font-weight: 600; color: #7C3AED; background: transparent; border: none; cursor: pointer; padding: 4px 7px; border-radius: 5px; flex-shrink: 0; }
+.printer-card-link:hover { background: #EDE9FE; }
+
+/* Print settings sliders */
+.setting-row { padding: 8px 4px; }
+.setting-row + .setting-row { border-top: 1px solid #F4F4F4; }
+.setting-label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+.setting-label { font-size: 11px; font-weight: 500; color: #555; }
+.setting-val { font-size: 11px; color: #7C3AED; font-weight: 600; }
+.slider-endpoints { display: flex; justify-content: space-between; font-size: 9px; color: #A0A0A0; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; margin-top: 1px; }
+.setting-hint { margin-top: 6px; font-size: 10px; color: #999; line-height: 1.4; display: flex; align-items: center; gap: 4px; }
+.setting-hint b { color: #666; font-weight: 600; }
+
+/* Stale banner */
+.stale-banner { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 12; display: none; align-items: center; gap: 12px; padding: 9px 14px; background: #FEF3C7; border: 1.5px solid #F59E0B; border-radius: 10px; box-shadow: 0 4px 18px rgba(245,158,11,0.18); font-size: 12.5px; color: #78350F; max-width: 560px; }
+#mode-print.state-stale .stale-banner { display: inline-flex; }
+.stale-banner-text b { color: #5C2C04; }
+.stale-banner-cta { border: none; background: #B45309; color: white; font-family: inherit; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 7px; cursor: pointer; flex-shrink: 0; }
+
+/* Pin layer */
+.pin-layer { position: absolute; inset: 0; pointer-events: none; z-index: 9; }
+.warning-pin { position: absolute; width: 28px; height: 28px; margin-left: -14px; margin-top: -28px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; cursor: pointer; pointer-events: auto; box-shadow: 0 3px 10px rgba(0,0,0,0.18); border: 2px solid white; transition: transform 0.15s, opacity 0.2s; opacity: 0; }
+.warning-pin.show { opacity: 1; }
+.warning-pin > span { transform: rotate(45deg); display: block; }
+.warning-pin.tier-mfg { background: #F59E0B; color: white; }
+.warning-pin.tier-struct { background: #DC2626; color: white; }
+.warning-pin:hover { transform: rotate(-45deg) scale(1.12); }
+.warning-pin.focused { transform: rotate(-45deg) scale(1.18); box-shadow: 0 5px 16px rgba(0,0,0,0.28); }
+#mode-print.state-stale .warning-pin { opacity: 0.35; filter: grayscale(0.6); }
+
+/* Nav cube (print) */
+.print-nav-cube-wrap { position: absolute; top: 14px; right: 14px; z-index: 10; width: 108px; height: 108px; }
+#print-nav-canvas { width: 108px; height: 108px; cursor: pointer; outline: none; display: block; }
+
+/* Print toolbar */
+.print-vp-toolbar { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; align-items: center; gap: 4px; padding: 5px; background: rgba(255,255,255,0.95); border: 1.5px solid #E0E0E0; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.tb-divider { width: 1px; height: 22px; background: #E4E4E4; margin: 0 3px; }
+
+/* Print chat sidebar */
+.print-chat-sidebar { flex: 0 0 360px; min-width: 340px; max-width: 540px; display: flex; flex-direction: column; background: white; border-left: 1px solid #EBEBEB; overflow: hidden; }
+
+/* Analyze CTA */
+.analyze-cta { align-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; background: #F5F3FF; border: 1.5px solid #DDD6FE; border-radius: 10px; }
+.analyze-cta-text { flex: 1; }
+.analyze-cta-title { font-size: 12.5px; font-weight: 600; color: #5B21B6; margin-bottom: 2px; }
+.analyze-cta-sub { font-size: 11px; color: #7C6AAB; line-height: 1.4; }
+.analyze-cta-btn { border: none; background: #7C3AED; color: white; font-family: inherit; font-size: 12px; font-weight: 600; padding: 8px 14px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.analyze-cta-btn:hover { background: #6D28D9; }
+
+/* Plan mode: Generate 2D preview CTA (mirrors analyze-cta pattern) */
+.preview-gen-cta { align-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; background: #F5F3FF; border: 1.5px solid #DDD6FE; border-radius: 10px; margin-top: 6px; }
+.preview-gen-cta-text { flex: 1; }
+.preview-gen-cta-title { font-size: 12.5px; font-weight: 600; color: #5B21B6; margin-bottom: 2px; }
+.preview-gen-cta-sub { font-size: 11px; color: #7C6AAB; line-height: 1.4; }
+.preview-gen-cta-btn { border: none; background: #7C3AED; color: white; font-family: inherit; font-size: 12px; font-weight: 600; padding: 8px 14px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.preview-gen-cta-btn:hover { background: #6D28D9; }
+
+/* Warn cards */
+.warn-card { align-self: stretch; border: 1.5px solid; border-radius: 10px; overflow: hidden; }
+.warn-card.tier-mfg { background: #FFFBEB; border-color: #FCD34D; }
+.warn-card.tier-struct { background: #FEF2F2; border-color: #FCA5A5; }
+.warn-card-head { display: flex; align-items: center; gap: 8px; padding: 9px 13px; border-bottom: 1px solid rgba(0,0,0,0.05); }
+.warn-card-pin { width: 18px; height: 18px; flex-shrink: 0; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 10px; }
+.warn-card-pin > span { transform: rotate(45deg); display: block; }
+.warn-card.tier-mfg .warn-card-pin { background: #F59E0B; }
+.warn-card.tier-struct .warn-card-pin { background: #DC2626; }
+.warn-card-title { font-size: 12.5px; font-weight: 600; flex: 1; }
+.warn-card.tier-mfg .warn-card-title { color: #78350F; }
+.warn-card.tier-struct .warn-card-title { color: #7F1D1D; }
+.warn-card-tier { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 6px; border-radius: 4px; }
+.warn-card.tier-mfg .warn-card-tier { background: #FEF3C7; color: #B45309; }
+.warn-card.tier-struct .warn-card-tier { background: #FEE2E2; color: #B91C1C; }
+.warn-card-body { padding: 10px 13px 10px; font-size: 12px; line-height: 1.55; }
+.warn-card.tier-mfg .warn-card-body { color: #78350F; }
+.warn-card.tier-struct .warn-card-body { color: #7F1D1D; }
+.warn-card-actions { display: flex; gap: 6px; padding: 0 13px 11px; }
+.warn-card-action { flex: 1; padding: 6px 10px; border-radius: 7px; border: 1.5px solid; font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.1s; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.warn-card.tier-mfg .warn-card-action.primary { background: #B45309; color: white; border-color: #B45309; }
+.warn-card.tier-mfg .warn-card-action.primary:hover { background: #92400E; }
+.warn-card.tier-mfg .warn-card-action.secondary { background: white; color: #78350F; border-color: #FCD34D; }
+.warn-card.tier-struct .warn-card-action.primary { background: #B91C1C; color: white; border-color: #B91C1C; }
+.warn-card.tier-struct .warn-card-action.primary:hover { background: #991B1B; }
+.warn-card.tier-struct .warn-card-action.secondary { background: white; color: #7F1D1D; border-color: #FCA5A5; }
+.warn-card.resolved { opacity: 0.5; }
+.warn-card.resolved .warn-card-title { text-decoration: line-through; }
+.warn-card.resolved .warn-card-body { text-decoration: line-through; }
+.warn-card.resolved .warn-card-actions { display: none; }
+.warn-card-resolved { display: none; }
+.warn-card.resolved .warn-card-resolved { display: none; }
+
+/* Orange status pill for print analysis */
+.status-pill-orange { border-color: #FCD34D; background: #FFFBEB; color: #B45309; }
+.status-pill-orange .status-pill-dot { background: #F59E0B; }
+
+/* Open in slicer confirmation */
+.slicer-confirm { display: none; align-items: center; gap: 10px; padding: 12px 14px; background: #F0FDF4; border: 1.5px solid #BBF7D0; border-radius: 10px; font-size: 12.5px; color: #047857; font-weight: 500; }
+.slicer-confirm.show { display: flex; }
+.slicer-confirm-dot { width: 8px; height: 8px; border-radius: 50%; background: #10B981; flex-shrink: 0; animation: slicer-pulse 1.2s ease-in-out infinite; }
+@keyframes slicer-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* File:// banner */
+.file-banner { display: none; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 999; padding: 8px 16px; background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; font-size: 12px; color: #78350F; max-width: 720px; line-height: 1.5; }
+.file-banner code { background: rgba(0,0,0,0.07); padding: 1px 5px; border-radius: 3px; font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
+.file-banner.show { display: block; }
+
+/* Sidebar active-project style (plan mode) */
+.sb-row.active-plan { background: white; border-left: 3px solid #7C3AED; padding-left: 9px; }
+</style>
+</head>
+<body>
+
+<div class="app" id="app" data-mode="home" data-phase="home">
+
+<!-- ════════════════════════════════════
+     SHARED SIDEBAR
+════════════════════════════════════ -->
+<div class="sidebar" id="sidebar">
+
+  <div class="sb-top">
+    <button class="sb-toggle" id="sb-toggle">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1.5" y="2.5" width="17" height="15" rx="2.5" stroke="currentColor" stroke-width="1.5"/><line x1="7" y1="2.5" x2="7" y2="17.5" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+  </div>
+  <div class="sb-div"></div>
+
+  <!-- COMPACT TILES -->
+  <div class="sb-compact">
+    <div class="sb-tile" id="tile-printers" title="Printers">
+      <span class="sb-tile-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="6" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M6 6V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" stroke-width="1.4"/><rect x="6" y="12" width="8" height="2" rx="0.8" fill="currentColor" opacity="0.35"/></svg></span>
+      <span class="sb-tile-label">Printers</span>
+    </div>
+    <div class="sb-tile active" id="tile-projects" title="Projects">
+      <span class="sb-tile-dot"></span>
+      <span class="sb-tile-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2L2 9v9h5.5v-6h5v6H18V9L10 2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
+      <span class="sb-tile-label">Projects</span>
+    </div>
+    <div class="sb-tile-spacer"></div>
+    <div class="sb-tile" id="tile-profile" title="Profile" style="margin-bottom:8px;">
+      <span class="sb-tile-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 18c0-4.5 3.1-7 7-7s7 2.5 7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+      <span class="sb-tile-label">Profile</span>
+    </div>
+  </div>
+
+  <!-- EXPANDED SECTIONS -->
+  <div class="sb-expanded">
+    <div class="sb-scroll">
+
+      <!-- PRINTERS -->
+      <div class="sb-card always-open" id="card-printers">
+        <div class="sb-card-hdr static">
+          <span class="sb-card-hdr-label">Printers</span>
+          <span class="sb-card-hdr-icon"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="5" stroke="currentColor" stroke-width="1.3"/><circle cx="7.5" cy="7.5" r="1.8" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 2v1.2M7.5 12.8V14M2 7.5h1.2M12.8 7.5H14M10.45 4.55l-.85.85M5.4 9.6l-.85.85M10.45 10.45l-.85-.85M5.4 5.4l-.85-.85" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+        </div>
+        <div class="sb-card-body">
+          <div class="sb-toolbar">
+            <button class="sb-tb-btn"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="4.5" cy="4.5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M7 7l2.5 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
+            <button class="sb-tb-btn"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1.5v8M1.5 5.5h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>
+            <div class="sb-tb-spacer"></div>
+            <button class="sb-tb-btn"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="1.5" cy="5.5" r="0.9" fill="currentColor"/><circle cx="5.5" cy="5.5" r="0.9" fill="currentColor"/><circle cx="9.5" cy="5.5" r="0.9" fill="currentColor"/></svg></button>
+          </div>
+          <div class="sb-row" data-home-action="open-printer" data-name="Bambu P2S" id="row-p2s">
+            <span class="sb-row-icon"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="4" width="10" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M3.5 4V2.8a1 1 0 011-1h4a1 1 0 011 1V4" stroke="currentColor" stroke-width="1.2"/></svg></span>
+            <span class="sb-row-label">Bambu P2S</span>
+            <span class="sb-row-badge">0.6</span>
+            <span class="sb-row-arrow">▾</span>
+          </div>
+          <div class="sb-row" data-home-action="open-printer" data-name="Bambu A1 mini" id="row-a1">
+            <span class="sb-row-icon"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="4" width="10" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M3.5 4V2.8a1 1 0 011-1h4a1 1 0 011 1V4" stroke="currentColor" stroke-width="1.2"/></svg></span>
+            <span class="sb-row-label">Bambu A1 mini</span>
+            <span class="sb-row-badge">0.4</span>
+            <span class="sb-row-arrow">▾</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sb-div"></div>
+
+      <!-- PROJECTS -->
+      <div class="sb-card always-open" id="card-projects">
+        <div class="sb-card-hdr static">
+          <span class="sb-card-hdr-label">Projects</span>
+          <span class="sb-card-hdr-icon"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5L1.5 7v7h4.5v-4.5h3V14H13.5V7L7.5 1.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></span>
+        </div>
+        <div class="sb-card-body">
+          <div class="sb-toolbar">
+            <button class="sb-tb-btn"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="4.5" cy="4.5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M7 7l2.5 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
+            <button class="sb-tb-btn"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="1" y="1" width="3.5" height="3.5" rx="0.7" stroke="currentColor" stroke-width="1.1"/><rect x="6.5" y="1" width="3.5" height="3.5" rx="0.7" stroke="currentColor" stroke-width="1.1"/><rect x="1" y="6.5" width="3.5" height="3.5" rx="0.7" stroke="currentColor" stroke-width="1.1"/><rect x="6.5" y="6.5" width="3.5" height="3.5" rx="0.7" stroke="currentColor" stroke-width="1.1"/></svg></button>
+            <div class="sb-tb-spacer"></div>
+            <button class="sb-tb-btn"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="1.5" cy="5.5" r="0.9" fill="currentColor"/><circle cx="5.5" cy="5.5" r="0.9" fill="currentColor"/><circle cx="9.5" cy="5.5" r="0.9" fill="currentColor"/></svg></button>
+          </div>
+          <!-- + New project button — always visible, resets to home -->
+          <button class="sb-new-project" id="btn-new-project">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1.5v8M1.5 5.5h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            New project
+          </button>
+          <div class="sb-row" data-home-action="open-recents" id="row-recents">
+            <span class="sb-row-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.2"/><path d="M6 3.5v2.8l1.8 1.3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>
+            <span class="sb-row-label">Recents</span>
+            <span class="sb-row-arrow">›</span>
+          </div>
+          <div class="sb-row">
+            <span class="sb-row-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1l1.1 2.2 2.4.35-1.75 1.7.41 2.4L6 6.5 3.84 7.65l.41-2.4L2.5 3.55l2.4-.35L6 1z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg></span>
+            <span class="sb-row-label">Favorites</span>
+            <span class="sb-row-arrow">›</span>
+          </div>
+          <div class="sb-row active-proj" id="row-charging-stand" style="display:none;">
+            <span class="sb-row-icon" style="color:#7C3AED;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M4 6l1.5 1.5L8 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="sb-row-label">Charging-stand</span>
+            <span class="sb-row-badge">v0</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /sb-scroll -->
+
+    <div class="sb-div"></div>
+
+    <!-- PROFILE -->
+    <div class="sb-card" id="card-profile">
+      <div class="sb-card-hdr clickable" id="hdr-profile">
+        <span class="sb-card-hdr-label">Profile</span>
+        <span class="sb-card-hdr-icon"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="5.5" r="2.8" stroke="currentColor" stroke-width="1.3"/><path d="M1.5 14c0-3.5 2.7-5.5 6-5.5s6 2 6 5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+      </div>
+      <div class="sb-card-body">
+        <div class="sb-row" id="row-settings"><span class="sb-row-label">Settings</span></div>
+        <div class="sb-row" style="margin-bottom:4px;"><span class="sb-row-label" style="color:#B91C1C;">Logout</span></div>
+      </div>
+    </div>
+
+  </div><!-- /sb-expanded -->
+</div><!-- /sidebar -->
+
+
+<!-- ════════════════════════════════════
+     MAIN WRAPPER
+════════════════════════════════════ -->
+<div id="main-wrapper">
+
+  <!-- SHARED PHASE BAR -->
+  <div id="shared-phase-bar">
+    <div class="shared-phase-pill">
+      <div class="shared-phase-step" id="phase-plan"><span class="shared-phase-dot"></span> Plan</div>
+      <div class="shared-phase-step" id="phase-design"><span class="shared-phase-dot"></span> Design</div>
+      <div class="shared-phase-step" id="phase-print"><span class="shared-phase-dot"></span> Print</div>
+    </div>
+  </div>
+
+  <!-- ════ HOME MODE ════ -->
+  <div class="mode" id="mode-home">
+    <div class="home-main">
+
+      <div class="home-view active" id="view-home">
+        <h1 class="home-title">What should we create today?</h1>
+        <div class="prompt-box">
+          <input class="prompt-input" type="text"
+            placeholder="type anything"
+            value="I want to create a wireless phone and watch charger for my nightstand"
+            readonly/>
+          <div class="prompt-divider"></div>
+          <div class="prompt-bar">
+            <button class="prompt-attach">+</button>
+            <div class="pb-spacer"></div>
+            <div class="model-pill">Model <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 2.5l2.5 3 2.5-3" stroke="#bbb" stroke-width="1.2" stroke-linecap="round"/></svg></div>
+            <button class="home-new-project-btn" id="home-new-project">Create Project</button>
+          </div>
+        </div>
+        <div class="chips">
+          <span class="chip">reverse-engineer</span>
+          <span class="chip sel">start-from-scratch</span>
+          <span class="chip">co-create</span>
+          <span class="chip">modify-existing</span>
+          <span class="chip">examples</span>
+        </div>
+      </div>
+
+      <div class="home-view" id="view-recents" style="flex-direction:column;overflow-y:auto;">
+        <div class="view-head">
+          <button class="view-back" data-home-back><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6l4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg> Back</button>
+          <div class="view-title">Recents</div>
+        </div>
+        <div class="file-grid">
+          <div class="file-card"><div class="file-thumb"><svg width="44" height="44" viewBox="0 0 44 44" fill="none"><rect x="4" y="4" width="36" height="36" rx="6" stroke="#D0D0D0" stroke-width="1.5"/><path d="M22 12l-10 8v10h7v-6h6v6h7V20L22 12z" stroke="#C0C0C0" stroke-width="1.5" stroke-linejoin="round"/></svg></div><div class="file-meta"><span class="file-name">Charging hub</span><span class="file-ver">v3</span></div></div>
+          <div class="file-card"><div class="file-thumb"><svg width="44" height="44" viewBox="0 0 44 44" fill="none"><rect x="4" y="4" width="36" height="36" rx="6" stroke="#D0D0D0" stroke-width="1.5"/><path d="M22 12l-10 8v10h7v-6h6v6h7V20L22 12z" stroke="#C0C0C0" stroke-width="1.5" stroke-linejoin="round"/></svg></div><div class="file-meta"><span class="file-name">Cable organizer</span><span class="file-ver">v1</span></div></div>
+          <div class="file-card"><div class="file-thumb"><svg width="44" height="44" viewBox="0 0 44 44" fill="none"><rect x="4" y="4" width="36" height="36" rx="6" stroke="#D0D0D0" stroke-width="1.5"/><path d="M22 12l-10 8v10h7v-6h6v6h7V20L22 12z" stroke="#C0C0C0" stroke-width="1.5" stroke-linejoin="round"/></svg></div><div class="file-meta"><span class="file-name">Desk mount</span><span class="file-ver">v1</span></div></div>
+          <div class="file-card"><div class="file-thumb"><svg width="44" height="44" viewBox="0 0 44 44" fill="none"><rect x="4" y="4" width="36" height="36" rx="6" stroke="#D0D0D0" stroke-width="1.5"/><path d="M22 12l-10 8v10h7v-6h6v6h7V20L22 12z" stroke="#C0C0C0" stroke-width="1.5" stroke-linejoin="round"/></svg></div><div class="file-meta"><span class="file-name">Shelf bracket</span><span class="file-ver">v2</span></div></div>
+        </div>
+      </div>
+
+      <div class="home-view" id="view-printer" style="flex-direction:column;overflow-y:auto;">
+        <div class="view-head">
+          <button class="view-back" data-home-back><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6l4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg> Back</button>
+          <div class="view-title" id="printer-title">Bambu P2S</div>
+        </div>
+        <div class="detail-grid">
+          <div><div class="detail-label">Build volume</div><div class="detail-box"></div></div>
+          <div><div class="detail-label">Nozzle library</div><div class="detail-box"></div></div>
+          <div class="detail-col-full"><div class="detail-label">Slicer integration</div><div class="detail-box"></div></div>
+        </div>
+      </div>
+
+      <div class="home-view" id="view-settings">
+        <div class="settings-wrap">
+          <div class="settings-nav">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#bbb;padding:4px 12px 10px;">Settings</div>
+            <div class="settings-nav-item on">General</div>
+            <div class="settings-nav-item">Appearance</div>
+            <div class="settings-nav-item">System</div>
+            <div class="settings-nav-item">Models</div>
+            <div class="settings-nav-item">Integrations</div>
+          </div>
+          <div class="settings-body">
+            <div><div class="settings-section-title">General</div><div class="settings-box"></div></div>
+            <div><div class="settings-section-title">Appearance</div><div class="settings-box"></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /home-main -->
+  </div><!-- /mode-home -->
+
+  <!-- ════ PLAN MODE ════ -->
+  <div class="mode" id="mode-plan">
+
+    <!-- Left floating card column -->
+    <div class="plan-left-cards" id="plan-left-cards">
+      <!-- Compact printer card — always visible in plan mode -->
+      <div class="vp-card" id="plan-printer-card">
+        <div class="vp-card-head"><span class="vp-card-title">Printer</span></div>
+        <div class="vp-card-body" style="padding:7px 10px 9px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="color:#666;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 20 20" fill="none"><rect x="2" y="6" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M6 6V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" stroke-width="1.4"/><rect x="6" y="12" width="8" height="2" rx="0.8" fill="currentColor" opacity="0.35"/></svg></span>
+            <span style="font-size:12px;font-weight:600;color:#1a1a1a;flex:1;">Bambu P2S</span>
+            <button class="printer-card-link">Change</button>
+          </div>
+        </div>
+      </div>
+      <div class="vp-card" id="plan-card-progress">
+        <div class="vp-card-head"><span class="vp-card-title">Progress</span></div>
+        <div class="vp-card-body">
+          <div class="r-status loading" id="plan-progress-status">
+            <span class="r-status-dot"></span>
+            <span id="plan-progress-text">Generating questions…</span>
+          </div>
+        </div>
+      </div>
+      <div class="vp-card" id="plan-card-spec" style="display:none;">
+        <div class="vp-card-head"><span class="vp-card-title">Spec</span></div>
+        <div class="vp-card-body" style="padding:4px 10px 12px;">
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#B0B0B0;">Type</div><div style="font-size:12px;color:#444;">Nightstand charging hub</div></div>
+            <div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#B0B0B0;">Placement</div><div style="font-size:12px;color:#444;">Bedroom, freestanding</div></div>
+            <div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#B0B0B0;">Chargers</div><div style="font-size:12px;color:#444;">Phone (MagSafe) + Apple Watch</div></div>
+            <div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#B0B0B0;">Charger dims</div><div style="font-size:12px;color:#444;">Ø25 × 8mm, 4mm cord</div></div>
+            <div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#B0B0B0;">Bodies</div><div style="font-size:12px;color:#444;">2 (base + arm)</div></div>
+            <div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#B0B0B0;">Material</div><div style="font-size:12px;color:#C8C8C8;font-style:italic;">Not specified</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="vp-card" id="plan-card-deps">
+        <div class="vp-card-head"><span class="vp-card-title">Dependencies</span></div>
+        <div class="vp-card-body">
+          <div class="r-list" id="plan-deps-list">
+            <div class="r-list-item"><span class="r-list-bullet"></span> phone charger</div>
+            <div class="r-list-item"><span class="r-list-bullet"></span> watch charger</div>
+          </div>
+        </div>
+      </div>
+      <button class="phase-cta" id="plan-cta" disabled>Generate 3D →</button>
+    </div>
+
+    <!-- Plan screens -->
+
+    <!-- PS1: Plan entry -->
+    <div class="plan-screen active" id="ps1">
+      <div class="plan-chat-section">
+        <div class="plan-chat-area">
+          <div class="plan-chat-msgs">
+            <div class="plan-chat-col">
+              <div class="msg-user"><div class="msg-sender" style="text-align:right;">You</div><div class="bubble-user">I want to create a wireless charging stand for my phone and watch</div></div>
+              <div class="msg-ai"><div class="msg-sender">Violet</div><div class="ai-text">Great idea. Since we're starting from scratch I'm going to ask some follow-up questions and we can go from there.</div></div>
+              <div class="ai-thinking"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="animation:spin 1.4s linear infinite;flex-shrink:0;"><circle cx="6.5" cy="6.5" r="5" stroke="#D0D0D0" stroke-width="1.5" stroke-dasharray="8 6" stroke-linecap="round"/></svg> formulating questions…</div>
+            </div>
+          </div>
+        </div>
+        <div class="plan-chat-input-wrap">
+          <div class="p-box">
+            <input class="p-input" type="text" placeholder="type anything" readonly/>
+            <div class="p-divider"></div>
+            <div class="p-bar"><button class="p-attach">+</button><div class="p-gap"></div><div class="model-pill">Model <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 2.5l2.5 3 2.5-3" stroke="#bbb" stroke-width="1.2" stroke-linecap="round"/></svg></div><button class="send-btn" data-ps-next="2"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 11V3M3.5 6.5L7 3l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PS2: Q&A Placement -->
+    <div class="plan-screen" id="ps2">
+      <div class="plan-chat-section">
+        <div class="plan-chat-area">
+          <div class="plan-chat-msgs">
+            <div class="plan-chat-col">
+              <div class="msg-user"><div class="msg-sender" style="text-align:right;">You</div><div class="bubble-user">I want to create a wireless charging stand for my phone and watch</div></div>
+              <div class="msg-ai"><div class="msg-sender">Violet</div><div class="ai-text">Got it — a few questions and I'll have everything I need.</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="plan-chat-input-wrap">
+          <div class="exp-input">
+            <div class="exp-title">Where are you gonna put this thing?</div>
+            <div class="exp-body">
+              <div class="q-nav"><button class="q-nav-btn on">1.</button><button class="q-nav-btn" data-ps-next="3">2.</button><button class="q-nav-btn" data-ps-next="4">3.</button></div>
+              <div class="q-cards">
+                <div class="q-opt sel" data-qgroup="place"><div class="q-opt-icon"><svg width="38" height="38" viewBox="0 0 38 38" fill="none"><rect x="3" y="15" width="32" height="16" rx="2.5" stroke="currentColor" stroke-width="1.8"/><rect x="5.5" y="10" width="11" height="6.5" rx="1.2" stroke="currentColor" stroke-width="1.6"/><rect x="21.5" y="10" width="11" height="6.5" rx="1.2" stroke="currentColor" stroke-width="1.6"/></svg></div><div class="q-opt-label">Bedroom</div></div>
+                <div class="q-opt" data-qgroup="place"><div class="q-opt-icon"><svg width="38" height="38" viewBox="0 0 38 38" fill="none"><rect x="4" y="15" width="30" height="6" rx="1.5" stroke="currentColor" stroke-width="1.8"/><line x1="9" y1="21" x2="9" y2="33" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="29" y1="21" x2="29" y2="33" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div><div class="q-opt-label">Desk</div></div>
+                <div class="q-opt" data-qgroup="place"><div class="q-opt-icon"><svg width="38" height="38" viewBox="0 0 38 38" fill="none"><rect x="5" y="5" width="28" height="28" rx="4" stroke="currentColor" stroke-width="1.8" stroke-dasharray="5 3"/><path d="M15 16c0-2.2 1.8-4 4-4s4 1.8 4 4c0 2-1.8 3.3-3.3 4V23" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="19" cy="27" r="1.5" fill="currentColor"/></svg></div><div class="q-opt-label alt">Somewhere else?</div></div>
+              </div>
+            </div>
+            <div class="exp-notes"><input class="exp-notes-input" type="text" placeholder="Any notes?" readonly/></div>
+            <div class="exp-actions"><button class="exp-attach">+</button><div class="p-gap"></div><button class="skip-btn">skip</button><button class="send-btn active" data-ps-next="3"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 11V3M3.5 6.5L7 3l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PS3: Q&A Dimensions -->
+    <div class="plan-screen" id="ps3">
+      <div class="plan-chat-section">
+        <div class="plan-chat-area">
+          <div class="plan-chat-msgs">
+            <div class="plan-chat-col">
+              <div class="msg-user"><div class="msg-sender" style="text-align:right;">You</div><div class="bubble-user">I want to create a wireless charging stand for my phone and watch</div></div>
+              <div class="msg-ai"><div class="msg-sender">Violet</div><div class="ai-text">Got it — a few questions and I'll have everything I need.</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="plan-chat-input-wrap">
+          <div class="exp-input">
+            <div class="exp-title">Phone charger dims</div>
+            <div class="exp-body">
+              <div class="q-nav"><button class="q-nav-btn answered" data-ps-next="2">1.</button><button class="q-nav-btn on">2.</button><button class="q-nav-btn" data-ps-next="4">3.</button></div>
+              <div class="q-cards">
+                <div class="q-meas focused"><div class="q-meas-icon"><svg width="38" height="38" viewBox="0 0 38 38" fill="none"><circle cx="19" cy="24" r="9" stroke="currentColor" stroke-width="1.8"/><line x1="10" y1="24" x2="10" y2="15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="28" y1="24" x2="28" y2="15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="10" y1="15" x2="28" y2="15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div><div class="q-meas-label">Diameter</div><div class="q-meas-row"><input class="q-meas-input filled" type="text" value="25" readonly/><div class="q-meas-unit">mm</div></div></div>
+                <div class="q-meas"><div class="q-meas-icon"><svg width="38" height="38" viewBox="0 0 38 38" fill="none"><ellipse cx="19" cy="12" rx="9" ry="3" stroke="currentColor" stroke-width="1.8"/><path d="M10 12v14M28 12v14" stroke="currentColor" stroke-width="1.8"/><ellipse cx="19" cy="26" rx="9" ry="3" stroke="currentColor" stroke-width="1.8"/></svg></div><div class="q-meas-label">Height</div><div class="q-meas-row"><input class="q-meas-input filled" type="text" value="8" readonly/><div class="q-meas-unit">mm</div></div></div>
+                <div class="q-meas"><div class="q-meas-icon"><svg width="38" height="38" viewBox="0 0 38 38" fill="none"><path d="M5 28 Q5 20 14 20 Q23 20 23 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><rect x="23" y="7" width="10" height="8" rx="2" stroke="currentColor" stroke-width="1.8"/></svg></div><div class="q-meas-label">Cord thickness</div><div class="q-meas-row"><input class="q-meas-input filled" type="text" value="4" readonly/><div class="q-meas-unit">mm</div></div></div>
+              </div>
+            </div>
+            <div class="exp-notes"><input class="exp-notes-input" type="text" placeholder="Any notes?" readonly/></div>
+            <div class="exp-actions"><button class="exp-attach">+</button><div class="p-gap"></div><button class="skip-btn">skip</button><button class="send-btn active" data-ps-next="4"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 11V3M3.5 6.5L7 3l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PS4: Q&A Mounting -->
+    <div class="plan-screen" id="ps4">
+      <div class="plan-chat-section">
+        <div class="plan-chat-area">
+          <div class="plan-chat-msgs">
+            <div class="plan-chat-col">
+              <div class="msg-user"><div class="msg-sender" style="text-align:right;">You</div><div class="bubble-user">I want to create a wireless charging stand for my phone and watch</div></div>
+              <div class="msg-ai"><div class="msg-sender">Violet</div><div class="ai-text">Got it — a few questions and I'll have everything I need.</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="plan-chat-input-wrap">
+          <div class="exp-input">
+            <div class="exp-title">Free-standing or hard-mounted?</div>
+            <div class="exp-body">
+              <div class="q-nav"><button class="q-nav-btn answered" data-ps-next="2">1.</button><button class="q-nav-btn answered" data-ps-next="3">2.</button><button class="q-nav-btn on">3.</button></div>
+              <div class="q-cards">
+                <div class="q-opt sel" data-qgroup="mount"><div class="q-opt-icon"><svg width="38" height="38" viewBox="0 0 38 38" fill="none"><circle cx="19" cy="22" r="5" stroke="currentColor" stroke-width="1.8"/><line x1="19" y1="5" x2="19" y2="17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 10l5-5 5 5M14 30l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="q-opt-label">Free-standing</div></div>
+                <div class="q-opt" data-qgroup="mount"><div class="q-opt-icon"><svg width="38" height="38" viewBox="0 0 38 38" fill="none"><rect x="9" y="9" width="20" height="20" rx="3" stroke="currentColor" stroke-width="1.8" stroke-dasharray="5 3"/><rect x="14" y="14" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/></svg></div><div class="q-opt-label">Hard-mounted</div></div>
+                <div class="q-opt" data-qgroup="mount"><div class="q-opt-icon"><svg width="38" height="38" viewBox="0 0 38 38" fill="none"><rect x="5" y="5" width="28" height="28" rx="4" stroke="currentColor" stroke-width="1.8" stroke-dasharray="5 3"/><path d="M15 16c0-2.2 1.8-4 4-4s4 1.8 4 4c0 2-1.8 3.3-3.3 4V23" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="19" cy="27" r="1.5" fill="currentColor"/></svg></div><div class="q-opt-label alt">Something else?</div></div>
+              </div>
+            </div>
+            <div class="exp-notes"><input class="exp-notes-input" type="text" placeholder="Any notes?" readonly/></div>
+            <div class="exp-actions"><button class="exp-attach">+</button><div class="p-gap"></div><button class="skip-btn">skip</button><button class="send-btn active" data-ps-next="5"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 11V3M3.5 6.5L7 3l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PS5: Synthesized spec -->
+    <div class="plan-screen" id="ps5">
+      <div class="plan-chat-section">
+        <div class="plan-chat-area">
+          <div class="plan-chat-msgs">
+            <div class="plan-chat-col">
+              <div class="msg-user"><div class="msg-sender" style="text-align:right;">You</div><div class="bubble-user">I want to create a wireless charging stand for my phone and watch</div></div>
+              <div class="msg-ai"><div class="msg-sender">Violet</div><div class="ai-text">Got it — a few questions and I'll have everything I need.</div></div>
+              <div class="msg-user"><div class="msg-sender" style="text-align:right;">You</div><div class="bubble-user">Bedroom · free-standing</div></div>
+              <div class="msg-user"><div class="msg-sender" style="text-align:right;">You</div><div class="bubble-user">Charger: Ø25 × 8mm, 4mm cord</div></div>
+              <div class="msg-ai"><div class="msg-sender">Violet</div><div class="ai-text">Got everything I needed. I synthesized your answers and didn't find any conflicts. I've captured the full spec — you can review it on the left.</div></div>
+              <div class="preview-gen-cta">
+                <div class="preview-gen-cta-text">
+                  <div class="preview-gen-cta-title">Spec complete</div>
+                  <div class="preview-gen-cta-sub">Ready to generate a 2D preview.</div>
+                </div>
+                <button class="preview-gen-cta-btn" data-ps-next="6">Generate preview <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M3 2l4 3.5L3 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="plan-chat-input-wrap">
+          <div class="p-box">
+            <input class="p-input" type="text" placeholder="Type a message or click continue…" readonly/>
+            <div class="p-divider"></div>
+            <div class="p-bar"><button class="p-attach">+</button><div class="p-gap"></div><div class="model-pill">Model <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 2.5l2.5 3 2.5-3" stroke="#bbb" stroke-width="1.2" stroke-linecap="round"/></svg></div><button class="send-btn"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 11V3M3.5 6.5L7 3l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PS6: Ready for preview? -->
+    <!-- PS7 (screen 6): Gate card — full-width chat (simplified) -->
+    <div class="plan-screen" id="ps7">
+      <div class="plan-chat-section">
+        <div class="plan-chat-area">
+          <div class="plan-chat-msgs">
+            <div class="plan-chat-col">
+              <div class="msg-ai"><div class="msg-sender">Violet</div><div class="ai-text">Here's the 2D preview — take a look. When you're ready, hit <b>Generate 3D →</b> on the left to start building.</div></div>
+              <div class="gate-card">
+                <div class="gate-preview">
+                  <img src="images/charging-stand-preview.png" alt="Charging stand concept" style="width:100%;display:block;"/>
+                </div>
+                <div class="gate-features">
+                  <span class="gate-pill">Phone + Apple Watch</span>
+                  <span class="gate-pill">MagSafe-compatible</span>
+                  <span class="gate-pill">Freestanding</span>
+                  <span class="gate-pill">5 bodies</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="plan-chat-input-wrap">
+          <div class="p-box">
+            <input class="p-input" type="text" placeholder="Type a message…" readonly/>
+            <div class="p-divider"></div>
+            <div class="p-bar"><button class="p-attach">+</button><div class="p-gap"></div><div class="model-pill">Model <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 2.5l2.5 3 2.5-3" stroke="#bbb" stroke-width="1.2" stroke-linecap="round"/></svg></div><button class="send-btn"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 11V3M3.5 6.5L7 3l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /#ps7 -->
+
+  </div><!-- /mode-plan -->
+
+
+  <!-- ════ DESIGN MODE ════ -->
+  <div class="mode" id="mode-design">
+    <div class="file-banner" id="design-file-banner">
+      Serve via <code>http://localhost:8000/demo.html</code> to load 3D models.
+    </div>
+
+    <div class="design-workspace">
+
+      <!-- VIEWPORT -->
+      <div class="design-viewport-area" id="design-viewport-area">
+
+        <canvas id="design-vp-canvas"></canvas>
+
+        <!-- Loading overlay -->
+        <div class="design-viewport-loading">
+          <svg class="viewport-cubes" width="240" height="200" viewBox="0 0 260 220" fill="none">
+            <defs><g id="cid"><path d="M0 6 L14 0 L28 6 L28 22 L14 28 L0 22 Z" fill="#C4C4C4" stroke="#9A9A9A" stroke-width="1"/><path d="M0 6 L14 12 L14 28 L0 22 Z" fill="#A8A8A8" stroke="#9A9A9A" stroke-width="1"/><path d="M14 12 L28 6 L28 22 L14 28 Z" fill="#888888" stroke="#9A9A9A" stroke-width="1"/></g></defs>
+            <g><use href="#cid" x="48" y="138" opacity="0.95"/><use href="#cid" x="100" y="158" opacity="0.85"/><use href="#cid" x="160" y="160" opacity="0.55"/><use href="#cid" x="208" y="140" opacity="0.4"/><use href="#cid" x="220" y="100" opacity="0.35"/><use href="#cid" x="190" y="72" opacity="0.55"/><use href="#cid" x="120" y="60" opacity="0.85"/><use href="#cid" x="60" y="72" opacity="0.9"/><use href="#cid" x="32" y="104" opacity="0.95"/></g>
+            <circle cx="130" cy="128" r="14" stroke="#444" stroke-width="2" fill="none"/>
+            <circle cx="130" cy="128" r="14" stroke="#7C3AED" stroke-width="2" fill="none" stroke-dasharray="6 4" opacity="0.7"/>
+          </svg>
+          <div class="viewport-status">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style="animation:spin 1.4s linear infinite;vertical-align:-1px;margin-right:6px;"><circle cx="5.5" cy="5.5" r="4" stroke="#9A9A9A" stroke-width="1.3" stroke-dasharray="7 5" stroke-linecap="round"/></svg>
+            <span id="design-loading-text">generating 3D model…</span>
+          </div>
+        </div>
+
+        <!-- Floating cards -->
+        <div class="design-vp-cards">
+
+          <!-- COMPACT PRINTER CARD -->
+          <div class="vp-card" id="design-printer-card">
+            <div class="vp-card-head"><span class="vp-card-title">Printer</span></div>
+            <div class="vp-card-body" style="padding:7px 10px 9px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="color:#666;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 20 20" fill="none"><rect x="2" y="6" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M6 6V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" stroke-width="1.4"/><rect x="6" y="12" width="8" height="2" rx="0.8" fill="currentColor" opacity="0.35"/></svg></span>
+                <span style="font-size:12px;font-weight:600;color:#1a1a1a;flex:1;">Bambu P2S</span>
+                <button class="printer-card-link">Change</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- BODIES -->
+          <div class="vp-card">
+            <div class="vp-card-head">
+              <span class="vp-card-title">Bodies</span>
+              <span class="vp-card-meta for-complete for-modified" id="design-bodies-count">5 bodies</span>
+            </div>
+            <div class="vp-card-body">
+              <div class="for-generating">
+                <div class="skeleton-line med"></div><div class="skeleton-line full"></div><div class="skeleton-line short"></div><div class="skeleton-line med"></div><div class="skeleton-line short"></div>
+              </div>
+              <div class="for-complete for-modified" id="design-body-list">
+                <div class="body-row" data-body="base"><span class="body-eye"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7 C 3 3, 5 2, 7 2 C 9 2, 11 3, 13 7 C 11 11, 9 12, 7 12 C 5 12, 3 11, 1 7 Z" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/></svg></span><span class="body-label">Base</span></div>
+                <div class="body-row" data-body="pillar"><span class="body-eye"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7 C 3 3, 5 2, 7 2 C 9 2, 11 3, 13 7 C 11 11, 9 12, 7 12 C 5 12, 3 11, 1 7 Z" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/></svg></span><span class="body-label">Pillar</span></div>
+                <div class="body-row" data-body="magsafe-base"><span class="body-eye"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7 C 3 3, 5 2, 7 2 C 9 2, 11 3, 13 7 C 11 11, 9 12, 7 12 C 5 12, 3 11, 1 7 Z" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/></svg></span><span class="body-label">MagSafe base</span></div>
+                <div class="body-row" data-body="magsafe-cover"><span class="body-eye"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7 C 3 3, 5 2, 7 2 C 9 2, 11 3, 13 7 C 11 11, 9 12, 7 12 C 5 12, 3 11, 1 7 Z" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/></svg></span><span class="body-label">MagSafe cover</span></div>
+                <div class="body-row" data-body="left-arm"><span class="body-eye"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7 C 3 3, 5 2, 7 2 C 9 2, 11 3, 13 7 C 11 11, 9 12, 7 12 C 5 12, 3 11, 1 7 Z" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/></svg></span><span class="body-label">Left arm</span></div>
+                <div class="body-row" data-body="right-arm" style="display:none;"><span class="body-eye"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7 C 3 3, 5 2, 7 2 C 9 2, 11 3, 13 7 C 11 11, 9 12, 7 12 C 5 12, 3 11, 1 7 Z" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/></svg></span><span class="body-label">Right arm</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PARAMETERS -->
+          <div class="vp-card">
+            <div class="vp-card-head"><span class="vp-card-title">Parameters</span></div>
+            <div class="vp-card-body">
+              <div class="for-generating"><div class="skeleton-block"></div><div class="skeleton-block"></div><div class="skeleton-line short"></div></div>
+              <div class="for-complete for-modified" id="design-params-pane">
+                <div class="param-row">
+                  <div class="param-label-row"><span class="param-label">Base width</span><span class="param-val" id="design-basewidth-val">85<span style="color:#A8A8A8;font-weight:400;">mm</span></span></div>
+                  <div class="slider" data-slider="basewidth" data-default="0.5" data-min="60" data-max="120" data-unit="mm"><div class="slider-track"></div><div class="slider-fill" style="width:50%;"></div><div class="slider-thumb" style="left:50%;"></div></div>
+                </div>
+                <div class="param-row">
+                  <div class="param-label-row"><span class="param-label">Pillar height</span><span class="param-val" id="design-pillarheight-val">120<span style="color:#A8A8A8;font-weight:400;">mm</span></span></div>
+                  <div class="slider" data-slider="pillarheight" data-default="0.5" data-min="80" data-max="180" data-unit="mm"><div class="slider-track"></div><div class="slider-fill" style="width:40%;"></div><div class="slider-thumb" style="left:40%;"></div></div>
+                </div>
+                <div class="toggle-row"><span class="toggle-label">Flip watch</span><div class="toggle" data-toggle="flipwatch"></div></div>
+                <div class="param-actions">
+                  <button class="param-action" id="design-param-reset" disabled><svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3 6a3 3 0 1 0 .9-2.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 2v2.2h2.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Reset</button>
+                  <button class="param-action primary" id="design-param-save" disabled><svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2.5 2.5h6L10 4v5.5a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 .5-1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M4 2.5V4.5h4V2.5" stroke="currentColor" stroke-width="1.3"/></svg> Save version</button>
+                </div>
+                <div class="param-version"><span>Editing</span><span class="param-version-tag" id="design-version-tag">v1</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PHASE CTA: Send to print -->
+          <button class="phase-cta" id="design-cta" disabled>Send to print →</button>
+        </div>
+
+        <!-- Nav cube -->
+        <div class="design-nav-cube-wrap"><canvas id="design-nav-canvas" width="216" height="216"></canvas></div>
+
+        <!-- Toolbar -->
+        <div class="design-vp-toolbar">
+          <button class="tb-btn active" id="design-tb-orbit" title="Orbit"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="6.5" ry="3" stroke="currentColor" stroke-width="1.4"/><ellipse cx="8" cy="8" rx="3" ry="6.5" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/></svg></button>
+          <button class="tb-btn" id="design-tb-fit" title="Fit"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 6V3h3M13 6V3h-3M3 10v3h3M13 10v3h-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><rect x="6" y="6" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.3"/></svg></button>
+        </div>
+      </div>
+
+      <div class="vp-divider" id="design-vp-divider"></div>
+
+      <!-- CHAT SIDEBAR -->
+      <aside class="design-chat-sidebar">
+        <div class="cs-msgs" id="design-cs-msgs">
+          <div class="summary-chip">
+            <span class="summary-chip-icon"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 3h10M2 7h10M2 11h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+            <span class="summary-chip-label">Plan summary</span>
+            <span class="summary-chip-text">9 messages</span>
+            <span class="summary-chip-chev">▾</span>
+          </div>
+          <div class="preview-card">
+            <div class="preview-card-img">
+              <svg width="100%" height="86" viewBox="0 0 600 210" preserveAspectRatio="xMidYMid meet" fill="none">
+                <g stroke="#5A5A5A" stroke-width="1.4" fill="#FAFAFA" stroke-linejoin="round">
+                  <rect x="240" y="160" width="120" height="30" rx="3"/><rect x="288" y="78" width="24" height="82" rx="2"/><circle cx="300" cy="78" r="11" fill="#F0F0F0"/>
+                  <g transform="rotate(-15 250 60)"><rect x="208" y="20" width="84" height="92" rx="8" fill="#FCFCFC"/><circle cx="250" cy="62" r="22" fill="none" stroke="#8A8A8A" stroke-width="1.2"/></g>
+                  <g transform="rotate(-15 250 60)"><rect x="218" y="8" width="64" height="116" rx="9" fill="#3A3A3A" stroke="#1F1F1F" stroke-width="1.2"/><rect x="223" y="13" width="54" height="106" rx="6" fill="#5A5A5A" stroke="none"/></g>
+                  <rect x="312" y="100" width="44" height="10" rx="2"/><rect x="346" y="92" width="22" height="34" rx="6" fill="#FCFCFC"/><rect x="349" y="88" width="16" height="22" rx="4" fill="#3A3A3A" stroke="#1F1F1F"/>
+                  <path d="M360 180 Q400 178 432 184 Q460 188 488 184" fill="none" stroke="#3A3A3A" stroke-width="1.6" stroke-linecap="round"/>
+                </g>
+              </svg>
+            </div>
+            <div class="preview-card-meta"><div class="preview-card-title">2D preview</div><div>Nightstand charging hub · 5 bodies</div></div>
+          </div>
+          <div class="cs-msg-user"><div class="cs-sender" style="text-align:right;">You</div><div class="cs-bubble-user">looks good to me, let's make the 3D</div></div>
+          <div class="cs-msg-ai for-generating"><div class="cs-sender">Violet</div><div class="ai-thinking" style="margin-top:0;"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="animation:spin 1.4s linear infinite;flex-shrink:0;"><circle cx="6.5" cy="6.5" r="5" stroke="#D0D0D0" stroke-width="1.5" stroke-dasharray="8 6" stroke-linecap="round"/></svg> generating 3D…</div></div>
+          <div class="cs-msg-ai for-complete for-modified"><div class="cs-sender">Violet</div><div class="status-pill"><span class="status-pill-dot"></span> V1 complete</div></div>
+          <div class="cs-msg-ai for-complete for-modified"><div class="cs-sender">Violet</div><div class="cs-text">Take a look. Tweak parameters or hide bodies on the left, or just tell me what to change.</div></div>
+          <div id="design-version-history"></div>
+        </div>
+        <div class="cs-input-wrap">
+          <div class="cs-prompt disabled for-generating">
+            <input class="cs-prompt-input" type="text" placeholder="Generating model — input disabled" readonly disabled/>
+            <div class="cs-prompt-bar"><button class="p-attach-sm" disabled>+</button><div class="p-gap"></div><button class="send-btn off" disabled><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 11V3M3.5 6.5L7 3l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+          </div>
+          <div class="cs-prompt for-complete for-modified">
+            <input class="cs-prompt-input" type="text" placeholder="Type a message…"/>
+            <div class="cs-prompt-bar"><button class="p-attach-sm">+</button><div class="p-gap"></div><button class="send-btn"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 11V3M3.5 6.5L7 3l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div><!-- /mode-design -->
+
+
+  <!-- ════ PRINT MODE ════ -->
+  <div class="mode" id="mode-print">
+    <div class="file-banner" id="print-file-banner">
+      Serve via <code>http://localhost:8000/demo.html</code> to load 3D models.
+    </div>
+
+    <div class="print-workspace">
+
+      <!-- VIEWPORT -->
+      <div class="print-viewport-area" id="print-viewport-area">
+
+        <canvas id="print-vp-canvas"></canvas>
+
+        <!-- Intro overlay -->
+        <div class="print-viewport-loading">
+          <svg width="120" height="80" viewBox="0 0 240 160" fill="none">
+            <ellipse cx="120" cy="130" rx="86" ry="14" fill="#D6D6D6"/>
+            <ellipse cx="120" cy="126" rx="86" ry="14" fill="#EFEFEF" stroke="#B8B8B8" stroke-width="1.2"/>
+            <g style="animation:hover-fade 1.6s ease-in-out infinite;">
+              <rect x="92" y="68" width="22" height="22" rx="2" fill="#B0B0B0" stroke="#8A8A8A"/>
+              <rect x="118" y="52" width="18" height="36" rx="2" fill="#A8A8A8" stroke="#8A8A8A"/>
+              <rect x="142" y="76" width="26" height="14" rx="2" fill="#B8B8B8" stroke="#8A8A8A"/>
+              <rect x="74" y="84" width="14" height="14" rx="2" fill="#BCBCBC" stroke="#8A8A8A"/>
+              <rect x="168" y="92" width="20" height="10" rx="2" fill="#B4B4B4" stroke="#8A8A8A"/>
+            </g>
+            <g stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.6">
+              <path d="M103 100 V112 M99 108 l4 4 4-4"/><path d="M127 100 V112 M123 108 l4 4 4-4"/><path d="M155 102 V112 M151 108 l4 4 4-4"/>
+            </g>
+          </svg>
+          <div class="viewport-status">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style="animation:spin 1.4s linear infinite;vertical-align:-1px;margin-right:6px;"><circle cx="5.5" cy="5.5" r="4" stroke="#9A9A9A" stroke-width="1.3" stroke-dasharray="7 5" stroke-linecap="round"/></svg>
+            arranging parts on build plate…
+          </div>
+        </div>
+
+        <!-- Stale banner -->
+        <div class="stale-banner">
+          <span style="color:#B45309;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 1.5L1.5 15h15L9 1.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="9" y1="6.5" x2="9" y2="10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="9" cy="12.5" r="0.9" fill="currentColor"/></svg></span>
+          <span class="stale-banner-text"><b>Design changed.</b> Plan out of sync.</span>
+          <button class="stale-banner-cta" id="print-stale-recompute">Recompute</button>
+        </div>
+
+        <!-- Floating cards -->
+        <div class="print-vp-cards">
+
+          <!-- PRINTER -->
+          <div class="vp-card printer-card">
+            <div class="vp-card-head"><span class="vp-card-title">Printer</span><span class="vp-card-meta">PLA · default</span></div>
+            <div class="printer-card-body">
+              <span class="printer-card-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="2" y="6" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M6 6V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" stroke-width="1.4"/><rect x="6" y="12" width="8" height="2" rx="0.8" fill="currentColor" opacity="0.35"/></svg><span class="printer-card-status-dot"></span></span>
+              <span class="printer-card-info"><span class="printer-card-name">Bambu P2S</span><div class="printer-card-vol">254 × 254 × 254 mm</div></span>
+              <button class="printer-card-link">Change</button>
+            </div>
+          </div>
+
+          <!-- PARTS -->
+          <div class="vp-card">
+            <div class="vp-card-head"><span class="vp-card-title">Parts</span><span class="vp-card-meta">5 on plate</span></div>
+            <div class="vp-card-body" id="print-parts-list">
+              <div class="part-row" data-part="base"><span class="part-eye"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7 C 3 3, 5 2, 7 2 C 9 2, 11 3, 13 7 C 11 11, 9 12, 7 12 C 5 12, 3 11, 1 7 Z" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/></svg></span><span class="part-label">Base</span><span class="part-status" data-status="unprocessed"><span class="part-status-dot"></span><span class="part-status-text">—</span></span></div>
+              <div class="part-row" data-part="pillar"><span class="part-eye"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7 C 3 3, 5 2, 7 2 C 9 2, 11 3, 13 7 C 11 11, 9 12, 7 12 C 5 12, 3 11, 1 7 Z" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/></svg></span><span class="part-label">Pillar</span><span class="part-status" data-status="unprocessed"><span class="part-status-dot"></span><span class="part-status-text">—</span></span></div>
+              <div class="part-row" data-part="magsafe-base"><span class="part-eye"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7 C 3 3, 5 2, 7 2 C 9 2, 11 3, 13 7 C 11 11, 9 12, 7 12 C 5 12, 3 11, 1 7 Z" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/></svg></span><span class="part-label">MagSafe base</span><span class="part-status" data-status="unprocessed"><span class="part-status-dot"></span><span class="part-status-text">—</span></span></div>
+              <div class="part-row" data-part="magsafe-cover"><span class="part-eye"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7 C 3 3, 5 2, 7 2 C 9 2, 11 3, 13 7 C 11 11, 9 12, 7 12 C 5 12, 3 11, 1 7 Z" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/></svg></span><span class="part-label">MagSafe cover</span><span class="part-status" data-status="unprocessed"><span class="part-status-dot"></span><span class="part-status-text">—</span></span></div>
+              <div class="part-row" data-part="arm"><span class="part-eye"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7 C 3 3, 5 2, 7 2 C 9 2, 11 3, 13 7 C 11 11, 9 12, 7 12 C 5 12, 3 11, 1 7 Z" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/></svg></span><span class="part-label">Watch arm</span><span class="part-status" data-status="unprocessed"><span class="part-status-dot"></span><span class="part-status-text">—</span></span></div>
+            </div>
+          </div>
+
+          <!-- PRINT SETTINGS -->
+          <div class="vp-card">
+            <div class="vp-card-head"><span class="vp-card-title">Print settings</span><span class="vp-card-meta">PLA · default</span></div>
+            <div class="vp-card-body">
+              <div class="setting-row">
+                <div class="setting-label-row"><span class="setting-label">Quality</span><span class="setting-val" id="print-quality-val">Balanced</span></div>
+                <div class="slider" data-print-slider="quality" data-default="0.5" data-stops="Fast,Balanced,Fine"><div class="slider-track"></div><div class="slider-fill" style="width:50%;"></div><div class="slider-thumb" style="left:50%;"></div></div>
+                <div class="slider-endpoints"><span>Fast</span><span>Fine</span></div>
+                <div class="setting-hint">→ <b>0.2mm</b> layer height · <b>~6h 20m</b> est.</div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-label-row"><span class="setting-label">Strength</span><span class="setting-val" id="print-strength-val">Standard</span></div>
+                <div class="slider" data-print-slider="strength" data-default="0.45" data-stops="Light,Standard,Rugged"><div class="slider-track"></div><div class="slider-fill" style="width:45%;"></div><div class="slider-thumb" style="left:45%;"></div></div>
+                <div class="slider-endpoints"><span>Light</span><span>Rugged</span></div>
+                <div class="setting-hint">→ <b>15%</b> infill · <b>3</b> walls</div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-label-row"><span class="setting-label">Surface</span><span class="setting-val" id="print-surface-val">Standard</span></div>
+                <div class="slider" data-print-slider="surface" data-default="0" data-stops="Standard,Smooth top,Smooth all"><div class="slider-track"></div><div class="slider-fill" style="width:0%;"></div><div class="slider-thumb" style="left:0%;"></div></div>
+                <div class="slider-endpoints"><span>Std</span><span>Smooth</span></div>
+                <div class="setting-hint">→ Ironing <b>off</b></div>
+              </div>
+              <div class="toggle-row"><span class="toggle-label">Auto-supports</span><div class="toggle on" data-print-toggle="supports"></div></div>
+            </div>
+          </div>
+
+          <!-- PHASE CTA: Open in Slicer -->
+          <button class="phase-cta" id="print-cta" disabled>Open in Slicer →</button>
+          <div class="slicer-confirm" id="slicer-confirm">
+            <span class="slicer-confirm-dot"></span>
+            Opening in BambuStudio…
+          </div>
+        </div>
+
+        <!-- Warning pins -->
+        <div class="pin-layer" id="print-pin-layer">
+          <div class="warning-pin tier-mfg" data-warn="overhang" data-part="magsafe-dock"><span>!</span></div>
+          <div class="warning-pin tier-mfg" data-warn="adhesion" data-part="main-pillar"><span>!</span></div>
+        </div>
+
+        <!-- Nav cube -->
+        <div class="print-nav-cube-wrap"><canvas id="print-nav-canvas" width="216" height="216"></canvas></div>
+
+        <!-- Toolbar -->
+        <div class="print-vp-toolbar">
+          <button class="tb-btn active" id="print-tb-orbit" title="Orbit"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="6.5" ry="3" stroke="currentColor" stroke-width="1.4"/><ellipse cx="8" cy="8" rx="3" ry="6.5" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/></svg></button>
+          <button class="tb-btn" id="print-tb-fit" title="Fit"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 6V3h3M13 6V3h-3M3 10v3h3M13 10v3h-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><rect x="6" y="6" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.3"/></svg></button>
+          <div class="tb-divider"></div>
+          <button class="tb-btn" id="print-tb-move" title="Move"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12M5 5l3-3 3 3M5 11l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button class="tb-btn" id="print-tb-rotate" title="Rotate"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13 8a5 5 0 1 1-1.5-3.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M13 3v3h-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+
+      <div class="vp-divider" id="print-vp-divider"></div>
+
+      <!-- CHAT SIDEBAR -->
+      <aside class="print-chat-sidebar">
+        <div class="cs-msgs" id="print-cs-msgs">
+          <div class="summary-chip">
+            <span class="summary-chip-icon"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 3h10M2 7h10M2 11h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+            <span class="summary-chip-label">Design summary</span>
+            <span class="summary-chip-text">5 bodies · v2</span>
+            <span class="summary-chip-chev">▾</span>
+          </div>
+          <div class="cs-msg-ai"><div class="cs-sender">Violet</div><div class="cs-text">5 parts arranged. Drag or rotate any to override.</div></div>
+
+          <div class="for-arranged analyze-cta">
+            <div class="analyze-cta-text"><div class="analyze-cta-title">Ready to analyze</div><div class="analyze-cta-sub">Overhangs, build volume, adhesion.</div></div>
+            <button class="analyze-cta-btn" id="print-run-analysis">Run <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M3 2l4 3.5L3 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+
+          <div class="cs-msg-ai for-analyzed"><div class="cs-sender">Violet</div><div class="cs-text"><b>3 issues found.</b> 2 fixable in print mode, 1 needs design mode.</div></div>
+
+          <div class="warn-card tier-mfg for-analyzed" data-warn="overhang">
+            <div class="warn-card-head"><span class="warn-card-pin"><span>!</span></span><span class="warn-card-title">MagSafe dock · 58° overhang</span><span class="warn-card-tier">Optimize</span></div>
+            <div class="warn-card-body">A support fin could improve the printability of this part.</div>
+            <div class="warn-card-actions"><button class="warn-card-action primary" id="print-fix-overhang">Custom support</button><button class="warn-card-action secondary">Ignore</button></div>
+            <div class="warn-card-resolved"></div>
+          </div>
+
+          <div class="warn-card tier-mfg for-analyzed" data-warn="adhesion">
+            <div class="warn-card-head"><span class="warn-card-pin"><span>!</span></span><span class="warn-card-title">Main pillar · 410mm² bed contact</span><span class="warn-card-tier">Optimize</span></div>
+            <div class="warn-card-body">Tall part, small footprint — adhesion risk.</div>
+            <div class="warn-card-actions"><button class="warn-card-action primary" id="print-fix-adhesion">Add brim</button><button class="warn-card-action secondary">Ignore</button></div>
+            <div class="warn-card-resolved"></div>
+          </div>
+
+          <div id="print-analysis-status" class="cs-msg-ai" style="display:none;">
+            <div class="cs-sender">Violet</div>
+            <div id="print-status-pill" class="status-pill status-pill-orange">
+              <span class="status-pill-dot"></span> <span id="print-status-text">2 issues · review</span>
+            </div>
+          </div>
+          <div class="cs-msg-ai for-stale"><div class="cs-sender">Violet</div><div class="cs-text">Design changed. Recompute to update the plan?</div></div>
+        </div>
+        <div class="cs-input-wrap">
+          <div class="cs-prompt">
+            <input class="cs-prompt-input" type="text" placeholder="Type a message, or tell Violet what to change…"/>
+            <div class="cs-prompt-bar"><button class="p-attach-sm">+</button><div class="p-gap"></div><button class="send-btn"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 11V3M3.5 6.5L7 3l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div><!-- /mode-print -->
+
+</div><!-- /main-wrapper -->
+</div><!-- /app -->
+
+<script type="module">
+import * as THREE from 'three';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ═══════════════════════════════════════════
+   MODE ROUTER
+═══════════════════════════════════════════ */
+const app = document.getElementById('app');
+let activeMode = null;
+let designInitialized = false;
+let printInitialized = false;
+let ps1Timer = null;
+const unlockedModes = new Set(['plan']);
+
+function unlockMode(mode) {
+  unlockedModes.add(mode);
+  document.getElementById('phase-' + mode)?.classList.add('unlocked');
+}
+
+async function setMode(newMode) {
+  if (newMode === activeMode) return;
+  const prev = activeMode ? document.getElementById('mode-' + activeMode) : null;
+
+  // Fade out current
+  if (prev) {
+    prev.style.opacity = '0';
+    await new Promise(r => setTimeout(r, 220));
+    prev.classList.remove('active', 'visible');
+    prev.style.opacity = '';
+  }
+
+  activeMode = newMode;
+  app.dataset.mode = newMode;
+
+  // Always clear the ps1 auto-advance timer when changing mode
+  clearTimeout(ps1Timer);
+
+  app.dataset.phase = newMode;
+
+  // Auto-advance ps1 → ps2 after 1.2 seconds on plan entry
+  if (newMode === 'plan') {
+    ps1Timer = setTimeout(() => {
+      if (activeMode === 'plan' && currentPlanScreen === 1) goPlanScreen(2);
+    }, 1200);
+  }
+
+  // Design: set generating state FIRST, then init Three.js so loading overlay shows
+  if (newMode === 'design') {
+    if (!designInitialized) {
+      setDesignState('generating'); // Must be before initDesign() to avoid race condition
+      designInitialized = true;
+      unlockMode('design'); // Design mode is now reachable via phase pills
+      initDesign();
+    }
+    // On re-entry, leave state as-is (complete/modified)
+  }
+  if (newMode === 'print' && !printInitialized) {
+    printInitialized = true;
+    initPrint();
+  }
+
+  // Reset print state when entering fresh
+  if (newMode === 'print') {
+    const mp = document.getElementById('mode-print');
+    mp.classList.remove('state-arranged', 'state-analyzed', 'state-iterated', 'state-stale', 'intro-done');
+    mp.classList.add('state-arranged');
+    // If STL already loaded previously, skip the intro overlay
+    if (printHasLoaded) { mp.classList.add('intro-done'); }
+    applyPrintPartStatuses('arranged');
+    document.querySelectorAll('.warn-card').forEach(c => c.classList.remove('resolved'));
+    document.querySelectorAll('#print-pin-layer .warning-pin').forEach(p => p.classList.remove('show'));
+    document.querySelectorAll('.dot-btn[data-print-state]').forEach(d => d.classList.toggle('active', d.dataset.printState === 'arranged'));
+    document.getElementById('slicer-confirm').classList.remove('show');
+    // Reset print CTA and intro state for re-entry
+    const printCTA = document.getElementById('print-cta');
+    if (printCTA) { printCTA.disabled = true; printCTA.style.display = ''; }
+    printIntroDismissed = printHasLoaded; // already loaded → don't re-play intro
+    // Reset analysis status pill
+    printResolvedCount = 0;
+    const analysisStatus = document.getElementById('print-analysis-status');
+    if (analysisStatus) analysisStatus.style.display = 'none';
+    const statusText = document.getElementById('print-status-text');
+    if (statusText) statusText.textContent = '2 issues · review';
+    const statusPill = document.getElementById('print-status-pill');
+    if (statusPill) statusPill.className = 'status-pill status-pill-orange';
+  }
+
+  const next = document.getElementById('mode-' + newMode);
+  next.classList.add('active');
+  next.getBoundingClientRect();
+  next.style.opacity = '1';
+  next.classList.add('visible');
+
+  // Update active-phase class on phase pills for nav cursor styling
+  document.querySelectorAll('.shared-phase-step').forEach(s => s.classList.remove('active-phase'));
+  document.getElementById('phase-' + newMode)?.classList.add('active-phase');
+}
+
+/* ═══════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════ */
+const sidebar = document.getElementById('sidebar');
+let sidebarCompact = false;
+
+document.getElementById('sb-toggle').addEventListener('click', () => {
+  sidebarCompact = !sidebarCompact;
+  sidebar.classList.toggle('compact', sidebarCompact);
+});
+
+// Compact tile clicks — expand sidebar and scroll to relevant card
+document.querySelectorAll('.sb-tile').forEach(tile => {
+  tile.addEventListener('click', () => {
+    sidebarCompact = false;
+    sidebar.classList.remove('compact');
+    setTimeout(() => {
+      if (tile.id === 'tile-projects') document.getElementById('card-projects')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      if (tile.id === 'tile-printers') document.getElementById('card-printers')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      if (tile.id === 'tile-profile') {
+        profileOpen = true;
+        document.getElementById('card-profile').classList.add('open');
+      }
+    }, 50);
+  });
+});
+
+// Profile accordion
+let profileOpen = false;
+document.getElementById('hdr-profile').addEventListener('click', () => {
+  profileOpen = !profileOpen;
+  document.getElementById('card-profile').classList.toggle('open', profileOpen);
+});
+
+// New project button (inside Projects card) — always resets to home
+document.getElementById('btn-new-project').addEventListener('click', () => {
+  resetPlanMode();
+  setMode('home');
+});
+
+// Home new-project button
+document.getElementById('home-new-project').addEventListener('click', () => {
+  // Reveal the charging-stand project in sidebar
+  document.getElementById('row-charging-stand').style.display = '';
+  // Collapse sidebar to compact for the plan mode transition
+  sidebarCompact = true;
+  sidebar.classList.add('compact');
+  resetPlanMode();
+  setMode('plan');
+});
+
+/* ═══════════════════════════════════════════
+   HOME MODE
+═══════════════════════════════════════════ */
+const homeViews = {
+  home: document.getElementById('view-home'),
+  recents: document.getElementById('view-recents'),
+  printer: document.getElementById('view-printer'),
+  settings: document.getElementById('view-settings'),
+};
+
+function showHomeView(name) {
+  Object.values(homeViews).forEach(v => v.classList.remove('active'));
+  homeViews[name]?.classList.add('active');
+}
+
+// Home sidebar actions — only fire when in home mode
+document.querySelectorAll('[data-home-action]').forEach(el => {
+  el.addEventListener('click', () => {
+    if (activeMode !== 'home') return;
+    const a = el.dataset.homeAction;
+    if (a === 'open-recents') showHomeView('recents');
+    else if (a === 'open-settings') {
+      showHomeView('settings');
+      profileOpen = true;
+      document.getElementById('card-profile').classList.add('open');
+    } else if (a === 'open-printer') {
+      document.getElementById('printer-title').textContent = el.dataset.name || 'Printer';
+      showHomeView('printer');
+    }
+  });
+});
+
+document.querySelectorAll('[data-home-back]').forEach(btn => {
+  btn.addEventListener('click', () => showHomeView('home'));
+});
+
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('sel'));
+    chip.classList.add('sel');
+  });
+});
+
+document.querySelectorAll('.settings-nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.settings-nav-item').forEach(i => i.classList.remove('on'));
+    item.classList.add('on');
+  });
+});
+
+/* ═══════════════════════════════════════════
+   PLAN MODE
+═══════════════════════════════════════════ */
+let currentPlanScreen = 1;
+const planScreenCount = 6;
+
+function updatePlanLeftCards(n) {
+  const progressStatus = document.getElementById('plan-progress-status');
+  const progressText = document.getElementById('plan-progress-text');
+  const specCard = document.getElementById('plan-card-spec');
+  const depsEl = document.getElementById('plan-deps-list');
+  const planCTA = document.getElementById('plan-cta');
+
+  if (n === 1) {
+    progressStatus.className = 'r-status loading';
+    progressText.textContent = 'Generating questions…';
+    specCard.style.display = 'none';
+    depsEl.innerHTML = '<div class="r-list-item"><span class="r-list-bullet"></span> phone charger</div><div class="r-list-item"><span class="r-list-bullet"></span> watch charger</div>';
+    planCTA.disabled = true;
+  } else if (n <= 4) {
+    const open = 5 - n;
+    progressStatus.className = 'r-status open';
+    progressText.textContent = open + ' open question' + (open > 1 ? 's' : '');
+    specCard.style.display = 'none';
+    planCTA.disabled = true;
+  } else {
+    progressStatus.className = 'r-status done';
+    progressText.textContent = 'Questions complete';
+    specCard.style.display = '';
+    depsEl.innerHTML = '<div class="r-list-item"><span class="r-list-bullet"></span> phone charger</div><div class="r-list-item"><span class="r-list-bullet"></span> watch charger</div><div class="r-list-item"><span class="r-list-bullet"></span> nightstand surface</div><div class="r-list-item"><span class="r-list-bullet"></span> cord routing</div>';
+    // CTA enabled only at gate card (s7)
+    planCTA.disabled = (n < 6);
+  }
+}
+
+function goPlanScreen(n) {
+  clearTimeout(ps1Timer); // Cancel auto-advance if user navigates manually
+  if (n < 1 || n > planScreenCount) return;
+  // Reset ps7 morph state when navigating away
+  if (n !== 7) {
+    const ps7 = document.getElementById('ps7');
+    ps7.classList.remove('is-design-mode');
+  }
+  document.querySelectorAll('.plan-screen').forEach((s, i) => {
+    s.classList.toggle('active', i + 1 === n);
+  });
+  currentPlanScreen = n;
+  updatePlanLeftCards(n);
+  // Scroll chat to bottom so gate card etc. are visible
+  requestAnimationFrame(() => {
+    const active = document.querySelector('.plan-screen.active .plan-chat-msgs');
+    if (active) active.scrollTop = active.scrollHeight;
+  });
+}
+
+function resetPlanMode() {
+  goPlanScreen(1);
+  document.getElementById('ps7').classList.remove('is-design-mode');
+}
+
+// Plan screen next buttons (data-ps-next)
+document.querySelectorAll('[data-ps-next]').forEach(btn => {
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    goPlanScreen(parseInt(btn.dataset.psNext));
+  });
+});
+
+// Plan single-select groups
+document.querySelectorAll('[data-qgroup]').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const g = opt.dataset.qgroup;
+    document.querySelectorAll(`[data-qgroup="${g}"]`).forEach(o => o.classList.remove('sel'));
+    opt.classList.add('sel');
+  });
+});
+
+// Gate opts single-select
+document.querySelectorAll('#gate-opts .opt-row').forEach(row => {
+  row.addEventListener('click', () => {
+    document.querySelectorAll('#gate-opts .opt-row').forEach(r => r.classList.remove('sel'));
+    row.classList.add('sel');
+  });
+});
+
+// Plan CTA → cross-fade to design mode (setMode handles init internally)
+document.getElementById('plan-cta').addEventListener('click', () => {
+  activeMode = 'plan'; // ensure setMode sees a mode change
+  setMode('design');
+});
+
+/* ═══════════════════════════════════════════
+   DESIGN MODE — state machine
+═══════════════════════════════════════════ */
+function setDesignState(state) {
+  const md = document.getElementById('mode-design');
+  md.classList.remove('state-generating', 'state-complete', 'state-modified');
+  md.classList.add('state-' + state);
+  const cta = document.getElementById('design-cta');
+  cta.disabled = (state === 'generating');
+  if (state === 'modified') {
+    ensureDesignVersionCard();
+    applyDesignModifiedParams();
+  } else if (state === 'complete') {
+    removeDesignVersionCard();
+    applyDesignDefaultParams();
+  }
+}
+
+// Design CTA → print mode
+document.getElementById('design-cta').addEventListener('click', () => {
+  unlockMode('print'); // Print mode is now reachable via phase pills
+  setMode('print');
+});
+
+// Body visibility toggle
+document.querySelectorAll('#design-body-list .body-row').forEach(row => {
+  row.addEventListener('click', () => {
+    row.classList.toggle('hidden');
+    const key = row.dataset.body;
+    if (bodyMeshes[key]) bodyMeshes[key].visible = !row.classList.contains('hidden');
+  });
+});
+
+// Design param sliders
+const designParamDefaults = {};
+const designParamCurrent = {};
+const designParamMeta = {};
+
+document.querySelectorAll('#mode-design .slider[data-slider]').forEach(slider => {
+  const id = slider.dataset.slider;
+  const def = parseFloat(slider.dataset.default);
+  const min = parseFloat(slider.dataset.min);
+  const max = parseFloat(slider.dataset.max);
+  const unit = slider.dataset.unit || '';
+  designParamDefaults[id] = def;
+  designParamCurrent[id] = def;
+  designParamMeta[id] = { min, max, unit };
+
+  const fill = slider.querySelector('.slider-fill');
+  const thumb = slider.querySelector('.slider-thumb');
+  const valEl = document.getElementById('design-' + id + '-val');
+
+  function setVal(ratio, animated = false) {
+    ratio = Math.max(0, Math.min(1, ratio));
+    designParamCurrent[id] = ratio;
+    const pct = (ratio * 100) + '%';
+    fill.style.transition = animated ? 'width 0.22s' : 'none';
+    thumb.style.transition = animated ? 'left 0.22s' : 'none';
+    fill.style.width = pct;
+    thumb.style.left = pct;
+    const v = Math.round(min + ratio * (max - min));
+    if (valEl) valEl.innerHTML = v + `<span style="color:#A8A8A8;font-weight:400;">${unit}</span>`;
+    updateDesignDirty();
+  }
+  slider._set = setVal;
+
+  let dragging = false;
+  slider.addEventListener('mousedown', e => { dragging = true; doSetDesign(e); e.preventDefault(); });
+  document.addEventListener('mousemove', e => { if (dragging) doSetDesign(e); });
+  document.addEventListener('mouseup', () => { dragging = false; });
+  function doSetDesign(e) {
+    const rect = slider.getBoundingClientRect();
+    setVal((e.clientX - rect.left) / rect.width);
+  }
+});
+
+const designToggleStates = { flipwatch: false };
+document.querySelectorAll('#mode-design .toggle[data-toggle]').forEach(t => {
+  t.addEventListener('click', () => {
+    t.classList.toggle('on');
+    designToggleStates[t.dataset.toggle] = t.classList.contains('on');
+    updateDesignDirty();
+    if (t.dataset.toggle === 'flipwatch') {
+      const useRight = designToggleStates.flipwatch;
+      if (bodyMeshes['left-arm'])  bodyMeshes['left-arm'].visible  = !useRight;
+      if (bodyMeshes['right-arm']) bodyMeshes['right-arm'].visible = useRight;
+      const leftRow  = document.querySelector('#design-body-list .body-row[data-body="left-arm"]');
+      const rightRow = document.querySelector('#design-body-list .body-row[data-body="right-arm"]');
+      if (leftRow)  { leftRow.style.display  = useRight ? 'none' : ''; leftRow.classList.remove('hidden'); }
+      if (rightRow) { rightRow.style.display = useRight ? '' : 'none'; rightRow.classList.remove('hidden'); }
+    }
+  });
+});
+
+function isDesignDirty() {
+  for (const id in designParamDefaults) {
+    if (Math.abs(designParamCurrent[id] - designParamDefaults[id]) > 0.001) return true;
+  }
+  return designToggleStates.flipwatch;
+}
+
+function updateDesignDirty() {
+  const dirty = isDesignDirty();
+  document.getElementById('design-param-reset').disabled = !dirty;
+  document.getElementById('design-param-save').disabled = !dirty;
+  const tag = document.getElementById('design-version-tag');
+  tag.classList.toggle('dirty', dirty);
+  const md = document.getElementById('mode-design');
+  tag.textContent = dirty ? 'v1 · modified' : (md.classList.contains('state-modified') ? 'v2' : 'v1');
+}
+
+document.getElementById('design-param-reset')?.addEventListener('click', () => {
+  Object.keys(designParamDefaults).forEach(id => {
+    document.querySelector(`#mode-design .slider[data-slider="${id}"]`)?._set(designParamDefaults[id], true);
+  });
+  document.querySelectorAll('#mode-design .toggle[data-toggle]').forEach(t => {
+    t.classList.remove('on'); designToggleStates[t.dataset.toggle] = false;
+  });
+  updateDesignDirty();
+});
+
+document.getElementById('design-param-save')?.addEventListener('click', () => {
+  const diffs = [];
+  for (const id in designParamCurrent) {
+    if (Math.abs(designParamCurrent[id] - designParamDefaults[id]) > 0.001) {
+      const { min, max, unit } = designParamMeta[id];
+      diffs.push({ key: id === 'pillarheight' ? 'Pillar height' : 'Base width', oldVal: Math.round(min + designParamDefaults[id] * (max - min)) + unit, newVal: Math.round(min + designParamCurrent[id] * (max - min)) + unit });
+    }
+  }
+  if (designToggleStates.flipwatch) diffs.push({ key: 'Flip watch', oldVal: 'off', newVal: 'on' });
+  Object.keys(designParamCurrent).forEach(id => { designParamDefaults[id] = designParamCurrent[id]; });
+  setDesignState('modified');
+  ensureDesignVersionCard(diffs);
+});
+
+let lastDesignDiffs = [{ key: 'Pillar height', oldVal: '120mm', newVal: '155mm' }];
+function ensureDesignVersionCard(diffs) {
+  if (diffs) lastDesignDiffs = diffs;
+  const host = document.getElementById('design-version-history');
+  host.innerHTML = '';
+  const card = document.createElement('div');
+  card.className = 'version-card';
+  card.innerHTML = `<div class="version-card-head"><span class="version-card-icon"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 7l2 2 3-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="version-card-title">Version saved</span><span class="version-card-tag">v2</span></div><div class="version-card-body"><div class="version-card-diff">${lastDesignDiffs.map(d => `<div class="version-card-diff-row"><span class="version-card-diff-key">${d.key}</span><span class="version-card-diff-val"><span class="version-card-diff-old">${d.oldVal}</span>${d.newVal}</span></div>`).join('')}</div></div>`;
+  host.appendChild(card);
+  requestAnimationFrame(() => { const msgs = document.getElementById('design-cs-msgs'); msgs.scrollTop = msgs.scrollHeight; });
+}
+function removeDesignVersionCard() { document.getElementById('design-version-history').innerHTML = ''; }
+function applyDesignDefaultParams() {
+  designParamDefaults.basewidth = 0.5; designParamDefaults.pillarheight = 0.5;
+  document.querySelector('#mode-design .slider[data-slider="basewidth"]')?._set(0.5, true);
+  document.querySelector('#mode-design .slider[data-slider="pillarheight"]')?._set(0.5, true);
+  document.querySelectorAll('#mode-design .toggle[data-toggle]').forEach(t => { t.classList.remove('on'); designToggleStates[t.dataset.toggle] = false; });
+  if (bodyMeshes['left-arm'])  bodyMeshes['left-arm'].visible  = true;
+  if (bodyMeshes['right-arm']) bodyMeshes['right-arm'].visible = false;
+  const leftRow  = document.querySelector('#design-body-list .body-row[data-body="left-arm"]');
+  const rightRow = document.querySelector('#design-body-list .body-row[data-body="right-arm"]');
+  if (leftRow)  { leftRow.style.display  = ''; leftRow.classList.remove('hidden'); }
+  if (rightRow) { rightRow.style.display = 'none'; rightRow.classList.remove('hidden'); }
+  updateDesignDirty();
+}
+function applyDesignModifiedParams() {
+  designParamDefaults.pillarheight = 0.75;
+  document.querySelector('#mode-design .slider[data-slider="pillarheight"]')?._set(0.75, true);
+  updateDesignDirty();
+}
+
+/* ═══════════════════════════════════════════
+   PRINT MODE — state machine
+═══════════════════════════════════════════ */
+const PRINT_STATUS_BY_STATE = {
+  arranged: { 'base':'unprocessed','main-pillar':'unprocessed','magsafe-dock':'unprocessed','top-beam':'unprocessed','support-pillar':'unprocessed' },
+  analyzed: { 'base':'ok','main-pillar':'review','magsafe-dock':'review','top-beam':'ok','support-pillar':'ok' },
+  iterated: { 'base':'ok','main-pillar':'review','magsafe-dock':'ok','top-beam':'ok','support-pillar':'ok' },
+  stale:    { 'base':'unprocessed','main-pillar':'unprocessed','magsafe-dock':'unprocessed','top-beam':'unprocessed','support-pillar':'unprocessed' },
+};
+const STATUS_LABELS = { unprocessed:'—', ok:'OK', review:'Review', blocked:'Blocked' };
+
+function applyPrintPartStatuses(stateName) {
+  const map = PRINT_STATUS_BY_STATE[stateName] || PRINT_STATUS_BY_STATE.arranged;
+  document.querySelectorAll('#print-parts-list .part-row').forEach(row => {
+    const st = map[row.dataset.part] || 'unprocessed';
+    const pill = row.querySelector('.part-status');
+    if (!pill) return;
+    pill.dataset.status = st;
+    const txt = pill.querySelector('.part-status-text');
+    if (txt) txt.textContent = STATUS_LABELS[st];
+  });
+}
+
+let printResolvedCount = 0;
+
+const WARN_TO_PART_UPDATE = {
+  'overhang': { part: 'magsafe-dock', status: 'ok' },
+  'adhesion':  { part: 'main-pillar',  status: 'ok' },
+};
+
+function resolvePrintCard(warnId) {
+  const card = document.querySelector(`.warn-card[data-warn="${warnId}"]`);
+  if (!card || card.classList.contains('resolved')) return; // don't double-resolve
+  printResolvedCount++;
+  card.classList.add('resolved');
+
+  // Hide the 3D warning pin for this issue
+  const pin = document.querySelector(`#print-pin-layer .warning-pin[data-warn="${warnId}"]`);
+  if (pin) pin.classList.remove('show');
+
+  // Update the corresponding part's status pill in the parts list
+  const partUpdate = WARN_TO_PART_UPDATE[warnId];
+  if (partUpdate) {
+    const row = document.querySelector(`#print-parts-list .part-row[data-part="${partUpdate.part}"]`);
+    if (row) {
+      const pill = row.querySelector('.part-status');
+      if (pill) {
+        pill.dataset.status = partUpdate.status;
+        const txt = pill.querySelector('.part-status-text');
+        if (txt) txt.textContent = STATUS_LABELS[partUpdate.status];
+      }
+    }
+  }
+
+  // Update status pill
+  const statusEl = document.getElementById('print-analysis-status');
+  const pill = document.getElementById('print-status-pill');
+  const text = document.getElementById('print-status-text');
+  if (statusEl) statusEl.style.display = '';
+  const remaining = 2 - printResolvedCount;
+  if (pill && text) {
+    if (remaining > 0) {
+      pill.className = 'status-pill status-pill-orange';
+      text.textContent = remaining + ' issue remaining';
+    } else {
+      pill.className = 'status-pill';
+      text.textContent = 'Ready to print';
+    }
+  }
+  requestAnimationFrame(() => {
+    const msgs = document.getElementById('print-cs-msgs');
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+  });
+}
+
+function setPrintState(s) {
+  const mp = document.getElementById('mode-print');
+  mp.classList.remove('state-arranged','state-analyzed','state-iterated','state-stale');
+  mp.classList.add('state-' + s);
+  applyPrintPartStatuses(s);
+  // Enable print CTA once analysis has been run
+  const printCTA = document.getElementById('print-cta');
+  if (printCTA) printCTA.disabled = !(s === 'analyzed' || s === 'iterated');
+  // Show analysis status when analysis runs
+  if (s === 'analyzed') {
+    const statusEl = document.getElementById('print-analysis-status');
+    const pill = document.getElementById('print-status-pill');
+    const text = document.getElementById('print-status-text');
+    if (statusEl) statusEl.style.display = '';
+    if (pill) pill.className = 'status-pill status-pill-orange';
+    if (text) text.textContent = '2 issues · review';
+  }
+}
+
+document.getElementById('print-run-analysis')?.addEventListener('click', () => setPrintState('analyzed'));
+document.getElementById('print-fix-overhang')?.addEventListener('click', () => resolvePrintCard('overhang'));
+document.getElementById('print-fix-adhesion')?.addEventListener('click', () => resolvePrintCard('adhesion'));
+document.getElementById('print-stale-recompute')?.addEventListener('click', () => setPrintState('analyzed'));
+
+// Print CTA → slicer confirmation
+document.getElementById('print-cta').addEventListener('click', () => {
+  document.getElementById('slicer-confirm').classList.add('show');
+  document.getElementById('print-cta').style.display = 'none';
+});
+
+// Parts / pin interaction
+const PRINT_PART_TO_PIN = { 'magsafe-dock':'overhang','main-pillar':'adhesion' };
+document.querySelectorAll('#print-parts-list .part-row').forEach(row => {
+  row.addEventListener('click', e => {
+    if (e.target.closest('.part-eye')) {
+      row.classList.toggle('hidden');
+      const key = row.dataset.part;
+      if (printMeshes[key]) printMeshes[key].visible = !row.classList.contains('hidden');
+      return;
+    }
+    document.querySelectorAll('#print-parts-list .part-row').forEach(r => r.classList.remove('focused'));
+    row.classList.add('focused');
+    document.querySelectorAll('#print-pin-layer .warning-pin').forEach(p => p.classList.remove('focused'));
+    const warnId = PRINT_PART_TO_PIN[row.dataset.part];
+    if (warnId) document.querySelector(`#print-pin-layer .warning-pin[data-warn="${warnId}"]`)?.classList.add('focused');
+  });
+});
+document.querySelectorAll('#print-pin-layer .warning-pin').forEach(pin => {
+  pin.addEventListener('click', () => {
+    document.querySelectorAll('#print-pin-layer .warning-pin').forEach(p => p.classList.remove('focused'));
+    pin.classList.add('focused');
+    document.querySelectorAll('#print-parts-list .part-row').forEach(r => r.classList.toggle('focused', r.dataset.part === pin.dataset.part));
+    document.querySelector(`.warn-card[data-warn="${pin.dataset.warn}"]`)?.scrollIntoView({ behavior:'smooth', block:'center' });
+  });
+});
+
+// Print semantic sliders
+const printSliderConfig = {
+  quality:  { stops:['Fast','Balanced','Fine'],             hints:['→ <b>0.28mm</b> layer · <b>~4h 10m</b> est.','→ <b>0.2mm</b> layer height · <b>~6h 20m</b> est.','→ <b>0.12mm</b> layer · <b>~10h 45m</b> est.'] },
+  strength: { stops:['Light','Standard','Rugged'],          hints:['→ <b>10%</b> infill · <b>2</b> walls','→ <b>15%</b> infill · <b>3</b> walls','→ <b>30%</b> infill · <b>4</b> walls'] },
+  surface:  { stops:['Standard','Smooth top','Smooth all'], hints:['→ Ironing <b>off</b>','→ Ironing <b>top only</b>','→ Ironing <b>all flat faces</b>'] },
+};
+document.querySelectorAll('[data-print-slider]').forEach(slider => {
+  const id = slider.dataset.printSlider;
+  const conf = printSliderConfig[id];
+  if (!conf) return;
+  const stopCount = conf.stops.length;
+  const fill = slider.querySelector('.slider-fill');
+  const thumb = slider.querySelector('.slider-thumb');
+  const valEl = document.getElementById('print-' + id + '-val');
+  const hintEl = slider.parentElement.querySelector('.setting-hint');
+  const snapToStop = ratio => Math.round(ratio * (stopCount - 1));
+  const applyStop = (idx, animated = true) => {
+    const snap = idx / (stopCount - 1);
+    const pct = (snap * 100) + '%';
+    fill.style.transition = animated ? 'width 0.18s' : 'none';
+    thumb.style.transition = animated ? 'left 0.18s' : 'none';
+    fill.style.width = pct; thumb.style.left = pct;
+    if (valEl) valEl.textContent = conf.stops[idx];
+    if (hintEl) hintEl.innerHTML = conf.hints[idx];
+  };
+  applyStop(snapToStop(parseFloat(slider.dataset.default)), false);
+  let dragging = false;
+  slider.addEventListener('mousedown', e => { dragging = true; doSetPrint(e); e.preventDefault(); });
+  document.addEventListener('mousemove', e => { if (dragging) doSetPrint(e, false); });
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return; dragging = false;
+    applyStop(snapToStop(parseFloat(thumb.style.left) / 100), true);
+  });
+  function doSetPrint(e, snap = false) {
+    const rect = slider.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    if (snap) { applyStop(snapToStop(ratio), true); }
+    else { fill.style.transition='none'; thumb.style.transition='none'; fill.style.width=(ratio*100)+'%'; thumb.style.left=(ratio*100)+'%'; }
+  }
+});
+document.querySelectorAll('[data-print-toggle]').forEach(t => { t.addEventListener('click', () => t.classList.toggle('on')); });
+
+/* ═══════════════════════════════════════════
+   SHARED THREE.JS UTILITIES
+═══════════════════════════════════════════ */
+function makeFaceTexture(label, accent = false) {
+  const c = document.createElement('canvas'); c.width = 192; c.height = 192;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = accent ? '#EEEAFA' : '#F4F4F4'; ctx.fillRect(0,0,192,192);
+  ctx.strokeStyle = accent ? '#9B7BE0' : '#B8B8B8'; ctx.lineWidth = 4; ctx.strokeRect(2,2,188,188);
+  ctx.fillStyle = accent ? '#5B21B6' : '#444'; ctx.font = 'bold 32px -apple-system, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, 96, 100);
+  const tex = new THREE.CanvasTexture(c); tex.anisotropy = 4; tex.minFilter = THREE.LinearFilter; return tex;
+}
+
+function makeNavCubeMaterials() {
+  return [
+    new THREE.MeshBasicMaterial({ map: makeFaceTexture('RIGHT') }),
+    new THREE.MeshBasicMaterial({ map: makeFaceTexture('LEFT') }),
+    new THREE.MeshBasicMaterial({ map: makeFaceTexture('TOP', true) }),
+    new THREE.MeshBasicMaterial({ map: makeFaceTexture('BOTTOM') }),
+    new THREE.MeshBasicMaterial({ map: makeFaceTexture('FRONT', true) }),
+    new THREE.MeshBasicMaterial({ map: makeFaceTexture('BACK') }),
+  ];
+}
+
+function makeAxisArm(dir, color) {
+  const len = 0.55, radius = 0.04;
+  const mat = new THREE.MeshBasicMaterial({ color });
+  const arm = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, len, 8), mat);
+  const target = dir.clone().normalize();
+  arm.quaternion.copy(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0), target));
+  arm.position.copy(target.clone().multiplyScalar(len / 2));
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.13, 10), mat);
+  tip.position.copy(target.clone().multiplyScalar(len + 0.065));
+  tip.quaternion.copy(arm.quaternion);
+  const g = new THREE.Group(); g.add(arm); g.add(tip); return g;
+}
+
+function makeNavTripod() {
+  const tripod = new THREE.Group();
+  tripod.position.set(-0.5, -0.5, 0.5);
+  tripod.add(makeAxisArm(new THREE.Vector3(1,0,0), 0xD03A3A));
+  tripod.add(makeAxisArm(new THREE.Vector3(0,1,0), 0x3B7BCC));
+  tripod.add(makeAxisArm(new THREE.Vector3(0,0,-1), 0x2D8A4A));
+  tripod.add(new THREE.Mesh(new THREE.SphereGeometry(0.06,12,8), new THREE.MeshBasicMaterial({ color: 0x444444 })));
+  return tripod;
+}
+
+function tweenCamera(camera, controls, fromVec, toVec, duration) {
+  const start = fromVec.clone(), end = toVec.clone(), t0 = performance.now();
+  function step(t) {
+    const p = Math.min(1, (t - t0) / duration);
+    const ease = p < 0.5 ? 2*p*p : 1 - Math.pow(-2*p+2,2)/2;
+    camera.position.lerpVectors(start, end, ease);
+    camera.lookAt(controls.target);
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* ═══════════════════════════════════════════
+   DESIGN THREE.JS
+═══════════════════════════════════════════ */
+let designScene, designCamera, designRenderer, designControls;
+let designAnimating = false;
+let bodyMeshes = {};
+let printMeshes = {};
+
+function initDesign() {
+  if (location.protocol === 'file:') document.getElementById('design-file-banner').classList.add('show');
+
+  const canvas = document.getElementById('design-vp-canvas');
+  const viewportArea = document.getElementById('design-viewport-area');
+
+  designScene = new THREE.Scene(); designScene.background = null;
+  designCamera = new THREE.PerspectiveCamera(35, 1, 0.1, 50000);
+  designCamera.position.set(300, 300, 300);
+  designRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  designRenderer.setPixelRatio(window.devicePixelRatio);
+  designRenderer.outputColorSpace = THREE.SRGBColorSpace;
+  designControls = new OrbitControls(designCamera, designRenderer.domElement);
+  designControls.enableDamping = true; designControls.dampingFactor = 0.08;
+
+  designScene.add(new THREE.HemisphereLight(0xffffff, 0xb0b0b0, 0.55));
+  const key = new THREE.DirectionalLight(0xffffff, 0.8); key.position.set(80,180,100); designScene.add(key);
+  const fill = new THREE.DirectionalLight(0xffffff, 0.35); fill.position.set(-100,60,-60); designScene.add(fill);
+
+  const bodiesGroup = new THREE.Group(); bodiesGroup.rotation.x = -Math.PI/2; designScene.add(bodiesGroup);
+  const mat = new THREE.MeshStandardMaterial({ color: 0xA8A8A8, roughness: 0.55, metalness: 0.18 });
+  const loader = new STLLoader();
+
+  // Safety timeout: transition to complete after 8s regardless of STL load result
+  setTimeout(() => {
+    if (document.getElementById('mode-design').classList.contains('state-generating')) {
+      setDesignState('complete');
+    }
+  }, 8000);
+
+  const DESIGN_PARTS = [
+    { key: 'base',          file: 'ChargingStand/parts/Base.stl',         visible: true  },
+    { key: 'pillar',        file: 'ChargingStand/parts/Pillar.stl',       visible: true  },
+    { key: 'magsafe-base',  file: 'ChargingStand/parts/MagsafeBase.stl',  visible: true  },
+    { key: 'magsafe-cover', file: 'ChargingStand/parts/MagsafeCover.stl', visible: true  },
+    { key: 'left-arm',      file: 'ChargingStand/parts/LeftArm.stl',      visible: true  },
+    { key: 'right-arm',     file: 'ChargingStand/parts/RightArm.stl',     visible: false },
+  ];
+  let designPartsLoaded = 0;
+
+  function onDesignPartLoaded() {
+    designPartsLoaded++;
+    if (designPartsLoaded === DESIGN_PARTS.length) {
+      const box = new THREE.Box3();
+      bodiesGroup.traverse(child => {
+        if (child.isMesh && child.visible) box.expandByObject(child);
+      });
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      bodiesGroup.position.sub(center);
+      bodiesGroup.position.y += size.y / 2 - center.y;
+      designFitCamera(box);
+      setDesignState('complete');
+    }
+  }
+
+  DESIGN_PARTS.forEach(({ key, file, visible }) => {
+    loader.load(file, geo => {
+      geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.visible = visible;
+      bodiesGroup.add(mesh);
+      bodyMeshes[key] = mesh;
+      onDesignPartLoaded();
+    }, undefined, err => {
+      console.error('Design part ' + key + ' failed', err);
+      onDesignPartLoaded();
+    });
+  });
+
+  function designFitCamera(box) {
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const dist = maxDim * 3.0;
+    const dir = new THREE.Vector3(1, 0.8, 1).normalize();
+    designCamera.position.copy(dir.multiplyScalar(dist));
+    designCamera.lookAt(0, 0, 0); designControls.target.set(0,0,0);
+    designCamera.near = Math.max(maxDim*0.01, 0.5); designCamera.far = maxDim*200;
+    designCamera.updateProjectionMatrix();
+    designControls.minDistance = maxDim*0.5; designControls.maxDistance = maxDim*10;
+    designControls.update();
+  }
+  window._designFitCamera = designFitCamera;
+
+  // Nav cube
+  const navCanvas = document.getElementById('design-nav-canvas');
+  const navRenderer = new THREE.WebGLRenderer({ canvas: navCanvas, antialias: true, alpha: true });
+  navRenderer.setPixelRatio(window.devicePixelRatio); navRenderer.setSize(108,108,false);
+  const navScene = new THREE.Scene(); const navCamera = new THREE.PerspectiveCamera(28,1,0.1,100);
+  const navCubeGeom = new THREE.BoxGeometry(1,1,1);
+  const navCube = new THREE.Mesh(navCubeGeom, makeNavCubeMaterials());
+  navCube.add(new THREE.LineSegments(new THREE.EdgesGeometry(navCubeGeom), new THREE.LineBasicMaterial({ color:0x555555 })));
+  navScene.add(navCube); navScene.add(makeNavTripod());
+  navCanvas.addEventListener('click', e => {
+    const rect = navCanvas.getBoundingClientRect();
+    const rc = new THREE.Raycaster();
+    rc.setFromCamera(new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1), navCamera);
+    const hits = rc.intersectObject(navCube, false);
+    if (!hits.length) return;
+    const wn = hits[0].face.normal.clone().applyQuaternion(navCube.getWorldQuaternion(new THREE.Quaternion()));
+    const dist = designCamera.position.length();
+    tweenCamera(designCamera, designControls, designCamera.position, wn.clone().multiplyScalar(dist).add(designControls.target), 380);
+  });
+
+  // Resize
+  function designResize() {
+    const rect = viewportArea.getBoundingClientRect();
+    designRenderer.setSize(rect.width, rect.height, false);
+    designCamera.aspect = rect.width / rect.height; designCamera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', designResize);
+  new ResizeObserver(designResize).observe(viewportArea);
+  designResize();
+
+  // Animate
+  if (!designAnimating) {
+    designAnimating = true;
+    (function designLoop() {
+      requestAnimationFrame(designLoop);
+      designControls.update();
+      designRenderer.render(designScene, designCamera);
+      const off = designCamera.position.clone().sub(designControls.target).normalize().multiplyScalar(4.6);
+      navCamera.position.copy(off); navCamera.up.copy(designCamera.up); navCamera.lookAt(0,0,0);
+      navRenderer.render(navScene, navCamera);
+    })();
+  }
+
+  // Toolbar
+  document.getElementById('design-tb-fit')?.addEventListener('click', () => {
+    const box = new THREE.Box3().setFromObject(designScene);
+    if (!box.isEmpty() && window._designFitCamera) window._designFitCamera(box);
+  });
+  document.getElementById('design-tb-orbit')?.addEventListener('click', () => {
+    document.querySelectorAll('#mode-design .tb-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('design-tb-orbit').classList.add('active');
+  });
+
+  // Resizable divider
+  (() => {
+    const divider = document.getElementById('design-vp-divider');
+    const workspace = divider.parentElement;
+    const vp = workspace.querySelector('.design-viewport-area');
+    const chat = workspace.querySelector('.design-chat-sidebar');
+    let dragging = false;
+    divider.addEventListener('mousedown', e => { dragging=true; divider.classList.add('dragging'); document.body.style.userSelect='none'; document.body.style.cursor='col-resize'; e.preventDefault(); });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const rect = workspace.getBoundingClientRect();
+      const ratio = Math.max(0.3, Math.min(0.8,(e.clientX-rect.left)/rect.width));
+      vp.style.flex = `${(ratio*10).toFixed(2)} 1 0`; chat.style.flex = `${((1-ratio)*10).toFixed(2)} 1 0`;
+      designResize();
+    });
+    document.addEventListener('mouseup', () => { if (!dragging) return; dragging=false; divider.classList.remove('dragging'); document.body.style.userSelect=''; document.body.style.cursor=''; });
+  })();
+}
+
+/* ═══════════════════════════════════════════
+   PRINT THREE.JS
+═══════════════════════════════════════════ */
+let printScene, printCamera, printRenderer, printControls;
+let printAnimating = false;
+let printLayoutBBox = null;
+let printIntroDismissed = false;
+let printHasLoaded = false; // true after STL has loaded at least once
+
+function initPrint() {
+  if (location.protocol === 'file:') document.getElementById('print-file-banner').classList.add('show');
+
+  const canvas = document.getElementById('print-vp-canvas');
+  const viewportArea = document.getElementById('print-viewport-area');
+  const mp = document.getElementById('mode-print');
+
+  printScene = new THREE.Scene(); printScene.background = null;
+  printCamera = new THREE.PerspectiveCamera(35, 1, 0.1, 50000);
+  printCamera.position.set(280, 240, 280);
+  printRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  printRenderer.setPixelRatio(window.devicePixelRatio); printRenderer.outputColorSpace = THREE.SRGBColorSpace;
+  printControls = new OrbitControls(printCamera, printRenderer.domElement);
+  printControls.enableDamping = true; printControls.dampingFactor = 0.08;
+  printControls.target.set(0, 30, 0);
+
+  printScene.add(new THREE.HemisphereLight(0xffffff, 0xb0b0b0, 0.55));
+  const key = new THREE.DirectionalLight(0xffffff, 0.8); key.position.set(80,180,100); printScene.add(key);
+  const fill = new THREE.DirectionalLight(0xffffff, 0.35); fill.position.set(-100,60,-60); printScene.add(fill);
+
+  // Build plate
+  const BED_X=254, BED_Z=254, BED_Y=254;
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(BED_X,2,BED_Z), new THREE.MeshStandardMaterial({ color:0x2a2a2a,roughness:0.85,metalness:0.1,transparent:true,opacity:0.4 }));
+  plate.position.y=-1; plate.renderOrder=-1; printScene.add(plate);
+  const grid = new THREE.GridHelper(BED_X,18,0x6E6E6E,0x4A4A4A);
+  grid.position.y=0.02; grid.material.transparent=true; grid.material.opacity=0.55; printScene.add(grid);
+  const outline = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(BED_X,0.5,BED_Z)), new THREE.LineBasicMaterial({ color:0x7C3AED }));
+  outline.position.y=0.25; printScene.add(outline);
+  const volume = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(BED_X,BED_Y,BED_Z)), new THREE.LineBasicMaterial({ color:0xC8C8C8,transparent:true,opacity:0.4 }));
+  volume.position.y=BED_Y/2; printScene.add(volume);
+
+  const layoutGroup = new THREE.Group(); layoutGroup.rotation.x=-Math.PI/2; printScene.add(layoutGroup);
+  const loader = new STLLoader();
+
+  function printOnLoaded() {
+    if (printIntroDismissed) return; printIntroDismissed = true;
+    printHasLoaded = true;
+    printFitCamera();
+    setTimeout(() => mp.classList.add('intro-done'), 200);
+  }
+
+  const PRINT_PARTS = [
+    { key: 'base',          file: 'ChargingStand/print-layout/Base.stl.stl'         },
+    { key: 'pillar',        file: 'ChargingStand/print-layout/Pillar.stl.stl'       },
+    { key: 'magsafe-base',  file: 'ChargingStand/print-layout/MagsafeBase.stl.stl'  },
+    { key: 'magsafe-cover', file: 'ChargingStand/print-layout/MagsafeCover.stl.stl' },
+    { key: 'arm',           file: 'ChargingStand/print-layout/RightArm.stl.stl'     },
+  ];
+  let printPartsLoaded = 0;
+  const printMat = new THREE.MeshStandardMaterial({ color:0xB0B0B0, roughness:0.55, metalness:0.18 });
+
+  function onPrintPartLoaded() {
+    printPartsLoaded++;
+    if (printPartsLoaded === PRINT_PARTS.length) {
+      layoutGroup.updateMatrixWorld(true);
+      const bb = new THREE.Box3().setFromObject(layoutGroup);
+      const center = bb.getCenter(new THREE.Vector3());
+      layoutGroup.position.x -= center.x; layoutGroup.position.z -= center.z; layoutGroup.position.y -= bb.min.y;
+      layoutGroup.updateMatrixWorld(true);
+      printLayoutBBox = new THREE.Box3().setFromObject(layoutGroup);
+      printFitCamera(); printOnLoaded();
+    }
+  }
+
+  if (location.protocol !== 'file:') {
+    PRINT_PARTS.forEach(({ key, file }) => {
+      loader.load(file, geo => {
+        geo.computeVertexNormals();
+        const mesh = new THREE.Mesh(geo, printMat);
+        layoutGroup.add(mesh);
+        printMeshes[key] = mesh;
+        onPrintPartLoaded();
+      }, undefined, () => onPrintPartLoaded());
+    });
+  } else {
+    setTimeout(printOnLoaded, 400);
+  }
+  setTimeout(printOnLoaded, 4000);
+
+  function printFitCamera() {
+    const box = new THREE.Box3().setFromObject(plate);
+    if (printLayoutBBox) box.union(printLayoutBBox);
+    box.expandByVector(new THREE.Vector3(0, BED_Y*0.4, 0));
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x,size.y,size.z);
+    const dist = maxDim*3.0;
+    const dir = new THREE.Vector3(1,0.8,1).normalize();
+    printCamera.position.copy(dir.multiplyScalar(dist)).add(center);
+    printCamera.lookAt(center); printControls.target.copy(center);
+    printCamera.near=Math.max(maxDim*0.01,0.5); printCamera.far=maxDim*200; printCamera.updateProjectionMatrix();
+    printControls.minDistance=maxDim*0.5; printControls.maxDistance=maxDim*10; printControls.update();
+  }
+
+  // Nav cube
+  const navCanvas = document.getElementById('print-nav-canvas');
+  const navRenderer = new THREE.WebGLRenderer({ canvas: navCanvas, antialias: true, alpha: true });
+  navRenderer.setPixelRatio(window.devicePixelRatio); navRenderer.setSize(108,108,false);
+  const navScene = new THREE.Scene(); const navCamera = new THREE.PerspectiveCamera(28,1,0.1,100);
+  const navCubeGeom = new THREE.BoxGeometry(1,1,1);
+  const navCube = new THREE.Mesh(navCubeGeom, makeNavCubeMaterials());
+  navCube.add(new THREE.LineSegments(new THREE.EdgesGeometry(navCubeGeom), new THREE.LineBasicMaterial({ color:0x555555 })));
+  navScene.add(navCube); navScene.add(makeNavTripod());
+  navCanvas.addEventListener('click', e => {
+    const rect = navCanvas.getBoundingClientRect();
+    const rc = new THREE.Raycaster();
+    rc.setFromCamera(new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1), navCamera);
+    const hits = rc.intersectObject(navCube, false);
+    if (!hits.length) return;
+    const wn = hits[0].face.normal.clone().applyQuaternion(navCube.getWorldQuaternion(new THREE.Quaternion()));
+    const target = printControls.target.clone();
+    const dist = printCamera.position.distanceTo(target);
+    tweenCamera(printCamera, printControls, printCamera.position, wn.clone().multiplyScalar(dist).add(target), 380);
+  });
+
+  // Resize
+  function printResize() {
+    const rect = viewportArea.getBoundingClientRect();
+    printRenderer.setSize(rect.width, rect.height, false);
+    printCamera.aspect = rect.width/rect.height; printCamera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', printResize);
+  new ResizeObserver(printResize).observe(viewportArea);
+  printResize();
+
+  // Warning pin anchors
+  const pinEls = {};
+  document.querySelectorAll('#print-pin-layer .warning-pin').forEach(el => { pinEls[el.dataset.warn] = el; });
+  const pinAnchors = {
+    overhang: { fx:0.65, fy:0.45, fz:0.55 },
+    adhesion: { fx:0.30, fy:0.95, fz:0.40 },
+  };
+
+  function updatePrintPins() {
+    const rect = viewportArea.getBoundingClientRect();
+    const showPins = mp.classList.contains('state-analyzed') || mp.classList.contains('state-iterated') || mp.classList.contains('state-stale');
+    Object.entries(pinEls).forEach(([warn, el]) => {
+      // Hide pin if its card has been resolved
+      const card = document.querySelector(`.warn-card[data-warn="${warn}"]`);
+      if (card && card.classList.contains('resolved')) { el.classList.remove('show'); return; }
+      if (!showPins || !printLayoutBBox) { el.classList.remove('show'); return; }
+      const a = pinAnchors[warn];
+      const { min, max } = printLayoutBBox;
+      const wp = new THREE.Vector3(min.x+a.fx*(max.x-min.x), min.y+a.fy*(max.y-min.y), min.z+a.fz*(max.z-min.z));
+      const proj = wp.clone().project(printCamera);
+      if (proj.z > 1) { el.classList.remove('show'); return; }
+      el.style.left = ((proj.x*0.5+0.5)*rect.width) + 'px';
+      el.style.top = ((-proj.y*0.5+0.5)*rect.height) + 'px';
+      el.classList.add('show');
+    });
+  }
+
+  // Animate
+  if (!printAnimating) {
+    printAnimating = true;
+    (function printLoop() {
+      requestAnimationFrame(printLoop);
+      printControls.update();
+      printRenderer.render(printScene, printCamera);
+      const off = printCamera.position.clone().sub(printControls.target).normalize().multiplyScalar(4.6);
+      navCamera.position.copy(off); navCamera.up.copy(printCamera.up); navCamera.lookAt(0,0,0);
+      navRenderer.render(navScene, navCamera);
+      updatePrintPins();
+    })();
+  }
+
+  // Toolbar
+  document.getElementById('print-tb-fit')?.addEventListener('click', printFitCamera);
+  document.querySelectorAll('#mode-print .tb-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.id === 'print-tb-fit') return;
+      document.querySelectorAll('#mode-print .tb-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // Resizable divider
+  (() => {
+    const divider = document.getElementById('print-vp-divider');
+    const workspace = divider.parentElement;
+    const vp = workspace.querySelector('.print-viewport-area');
+    const chat = workspace.querySelector('.print-chat-sidebar');
+    let dragging = false;
+    divider.addEventListener('mousedown', e => { dragging=true; divider.classList.add('dragging'); document.body.style.userSelect='none'; document.body.style.cursor='col-resize'; e.preventDefault(); });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const rect = workspace.getBoundingClientRect();
+      const ratio = Math.max(0.3, Math.min(0.8,(e.clientX-rect.left)/rect.width));
+      vp.style.flex=`${(ratio*10).toFixed(2)} 1 0`; chat.style.flex=`${((1-ratio)*10).toFixed(2)} 1 0`;
+      printResize();
+    });
+    document.addEventListener('mouseup', () => { if (!dragging) return; dragging=false; divider.classList.remove('dragging'); document.body.style.userSelect=''; document.body.style.cursor=''; });
+  })();
+}
+
+/* ═══════════════════════════════════════════
+   KEYBOARD SHORTCUTS (arrow keys for plan screens)
+═══════════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  if (activeMode === 'plan') {
+    if (e.key === 'ArrowRight') {
+      if (currentPlanScreen === 6) {
+        activeMode = 'plan';
+        setMode('design'); // setMode handles init internally
+      } else {
+        goPlanScreen(currentPlanScreen + 1);
+      }
+    }
+    if (e.key === 'ArrowLeft') goPlanScreen(currentPlanScreen - 1);
+  }
+});
+
+/* ═══════════════════════════════════════════
+   PHASE PILL NAVIGATION
+═══════════════════════════════════════════ */
+// Plan is always unlocked; design/print unlock as user progresses
+document.getElementById('phase-plan').classList.add('unlocked');
+
+['plan', 'design', 'print'].forEach(mode => {
+  document.getElementById('phase-' + mode)?.addEventListener('click', () => {
+    if (!unlockedModes.has(mode)) return; // locked — ignore click
+    if (activeMode === mode) return;       // already on this mode
+    setMode(mode);
+  });
+});
+
+/* ═══════════════════════════════════════════
+   SEND BUTTON ACTIVATION ON TYPING
+   Live chat inputs (design + print) activate their send button when non-empty
+═══════════════════════════════════════════ */
+document.querySelectorAll('.cs-prompt-input:not([disabled])').forEach(input => {
+  const btn = input.closest('.cs-prompt')?.querySelector('.send-btn');
+  if (!btn) return;
+  input.addEventListener('input', () => {
+    btn.classList.toggle('active', input.value.trim().length > 0);
+  });
+});
+
+/* ═══════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════ */
+// Start on home mode
+(async () => {
+  const homeMode = document.getElementById('mode-home');
+  homeMode.classList.add('active');
+  homeMode.getBoundingClientRect();
+  homeMode.style.opacity = '1';
+  homeMode.classList.add('visible');
+  activeMode = 'home';
+  app.dataset.mode = 'home';
+  app.dataset.phase = 'home';
+  updatePlanLeftCards(1);
+})();
+
+</script>
+</body>
+</html>
