@@ -419,6 +419,8 @@ html, body {
 }
 .phase-cta:hover { background: #6D28D9; }
 .phase-cta:disabled { background: #DCDCDC; color: #A0A0A0; cursor: not-allowed; }
+.phase-cta.cta-loading { background: white; color: #BDBDBD; border: 1.5px dashed #D8D8D8; cursor: default; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.phase-cta.cta-loading:hover { background: white; }
 
 /* ═══════════════════════════════════════════════
    DESIGN MODE
@@ -1110,7 +1112,7 @@ html, body {
                   <div class="preview-gen-cta-title">Spec complete</div>
                   <div class="preview-gen-cta-sub">Ready to generate a 2D preview.</div>
                 </div>
-                <button class="preview-gen-cta-btn" data-ps-next="6">Generate preview <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M3 2l4 3.5L3 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button class="preview-gen-cta-btn" id="preview-gen-btn">Generate preview <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M3 2l4 3.5L3 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
               </div>
             </div>
           </div>
@@ -1402,16 +1404,12 @@ html, body {
 
           <!-- PHASE CTA: Open in Slicer -->
           <button class="phase-cta" id="print-cta" disabled>Open in Slicer →</button>
-          <div class="slicer-confirm" id="slicer-confirm">
-            <span class="slicer-confirm-dot"></span>
-            Opening in BambuStudio…
-          </div>
         </div>
 
         <!-- Warning pins -->
         <div class="pin-layer" id="print-pin-layer">
-          <div class="warning-pin tier-mfg" data-warn="overhang" data-part="magsafe-dock"><span>!</span></div>
-          <div class="warning-pin tier-mfg" data-warn="adhesion" data-part="main-pillar"><span>!</span></div>
+          <div class="warning-pin tier-mfg" data-warn="surface" data-part="magsafe-base"><span>!</span></div>
+          <div class="warning-pin tier-mfg" data-warn="infill" data-part="base"><span>!</span></div>
         </div>
 
         <!-- Nav cube -->
@@ -1447,17 +1445,17 @@ html, body {
 
           <div class="cs-msg-ai for-analyzed"><div class="cs-sender">Violet</div><div class="cs-text"><b>3 issues found.</b> 2 fixable in print mode, 1 needs design mode.</div></div>
 
-          <div class="warn-card tier-mfg for-analyzed" data-warn="overhang">
-            <div class="warn-card-head"><span class="warn-card-pin"><span>!</span></span><span class="warn-card-title">MagSafe dock · 58° overhang</span><span class="warn-card-tier">Optimize</span></div>
-            <div class="warn-card-body">A support fin could improve the printability of this part.</div>
-            <div class="warn-card-actions"><button class="warn-card-action primary" id="print-fix-overhang">Custom support</button><button class="warn-card-action secondary">Ignore</button></div>
+          <div class="warn-card tier-mfg for-analyzed" data-warn="surface">
+            <div class="warn-card-head"><span class="warn-card-pin"><span>!</span></span><span class="warn-card-title">MagSafe base · Surface quality</span><span class="warn-card-tier">Optimize</span></div>
+            <div class="warn-card-body">The curved surface will show visible stepping, this may impact the pivot. Enable variable layer height for better dimensional accuracy.</div>
+            <div class="warn-card-actions"><button class="warn-card-action primary" id="print-fix-surface">Variable layer height</button><button class="warn-card-action secondary">Ignore</button></div>
             <div class="warn-card-resolved"></div>
           </div>
 
-          <div class="warn-card tier-mfg for-analyzed" data-warn="adhesion">
-            <div class="warn-card-head"><span class="warn-card-pin"><span>!</span></span><span class="warn-card-title">Main pillar · 410mm² bed contact</span><span class="warn-card-tier">Optimize</span></div>
-            <div class="warn-card-body">Tall part, small footprint — adhesion risk.</div>
-            <div class="warn-card-actions"><button class="warn-card-action primary" id="print-fix-adhesion">Add brim</button><button class="warn-card-action secondary">Ignore</button></div>
+          <div class="warn-card tier-mfg for-analyzed" data-warn="infill">
+            <div class="warn-card-head"><span class="warn-card-pin"><span>!</span></span><span class="warn-card-title">Base · Functionality</span><span class="warn-card-tier">Optimize</span></div>
+            <div class="warn-card-body">This part carries the load of the whole stand. Print at higher infill for a rigid, sturdy base.</div>
+            <div class="warn-card-actions"><button class="warn-card-action primary" id="print-fix-infill">Increase infill</button><button class="warn-card-action secondary">Ignore</button></div>
             <div class="warn-card-resolved"></div>
           </div>
 
@@ -1555,10 +1553,9 @@ async function setMode(newMode) {
     document.querySelectorAll('.warn-card').forEach(c => c.classList.remove('resolved'));
     document.querySelectorAll('#print-pin-layer .warning-pin').forEach(p => p.classList.remove('show'));
     document.querySelectorAll('.dot-btn[data-print-state]').forEach(d => d.classList.toggle('active', d.dataset.printState === 'arranged'));
-    document.getElementById('slicer-confirm').classList.remove('show');
     // Reset print CTA and intro state for re-entry
     const printCTA = document.getElementById('print-cta');
-    if (printCTA) { printCTA.disabled = true; printCTA.style.display = ''; }
+    if (printCTA) { printCTA.disabled = true; printCTA.style.display = ''; printCTA.classList.remove('cta-loading'); printCTA.innerHTML = 'Open in Slicer →'; }
     printIntroDismissed = printHasLoaded; // already loaded → don't re-play intro
     // Reset analysis status pill
     printResolvedCount = 0;
@@ -1750,6 +1747,18 @@ document.querySelectorAll('[data-ps-next]').forEach(btn => {
   });
 });
 
+// Generate preview — show loading chip before advancing
+document.getElementById('preview-gen-btn')?.addEventListener('click', () => {
+  const cta = document.querySelector('#ps5 .preview-gen-cta');
+  const col = document.querySelector('#ps5 .plan-chat-col');
+  if (cta) cta.style.display = 'none';
+  const chip = document.createElement('div');
+  chip.className = 'ai-thinking';
+  chip.innerHTML = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="animation:spin 1.4s linear infinite;flex-shrink:0;"><circle cx="6.5" cy="6.5" r="5" stroke="#D0D0D0" stroke-width="1.5" stroke-dasharray="8 6" stroke-linecap="round"/></svg> generating preview…';
+  if (col) col.appendChild(chip);
+  setTimeout(() => goPlanScreen(6), 1400);
+});
+
 // Plan single-select groups
 document.querySelectorAll('[data-qgroup]').forEach(opt => {
   opt.addEventListener('click', () => {
@@ -1934,8 +1943,6 @@ function applyDesignDefaultParams() {
   updateDesignDirty();
 }
 function applyDesignModifiedParams() {
-  designParamDefaults.pillarheight = 0.75;
-  document.querySelector('#mode-design .slider[data-slider="pillarheight"]')?._set(0.75, true);
   updateDesignDirty();
 }
 
@@ -1943,10 +1950,10 @@ function applyDesignModifiedParams() {
    PRINT MODE — state machine
 ═══════════════════════════════════════════ */
 const PRINT_STATUS_BY_STATE = {
-  arranged: { 'base':'unprocessed','main-pillar':'unprocessed','magsafe-dock':'unprocessed','top-beam':'unprocessed','support-pillar':'unprocessed' },
-  analyzed: { 'base':'ok','main-pillar':'review','magsafe-dock':'review','top-beam':'ok','support-pillar':'ok' },
-  iterated: { 'base':'ok','main-pillar':'review','magsafe-dock':'ok','top-beam':'ok','support-pillar':'ok' },
-  stale:    { 'base':'unprocessed','main-pillar':'unprocessed','magsafe-dock':'unprocessed','top-beam':'unprocessed','support-pillar':'unprocessed' },
+  arranged: { 'base':'unprocessed','pillar':'unprocessed','magsafe-base':'unprocessed','magsafe-cover':'unprocessed','arm':'unprocessed' },
+  analyzed: { 'base':'review',     'pillar':'ok',         'magsafe-base':'review',      'magsafe-cover':'ok',        'arm':'ok' },
+  iterated: { 'base':'ok',         'pillar':'ok',         'magsafe-base':'ok',          'magsafe-cover':'ok',        'arm':'ok' },
+  stale:    { 'base':'unprocessed','pillar':'unprocessed','magsafe-base':'unprocessed','magsafe-cover':'unprocessed','arm':'unprocessed' },
 };
 const STATUS_LABELS = { unprocessed:'—', ok:'OK', review:'Review', blocked:'Blocked' };
 
@@ -1965,8 +1972,8 @@ function applyPrintPartStatuses(stateName) {
 let printResolvedCount = 0;
 
 const WARN_TO_PART_UPDATE = {
-  'overhang': { part: 'magsafe-dock', status: 'ok' },
-  'adhesion':  { part: 'main-pillar',  status: 'ok' },
+  'surface':  { part: 'magsafe-base', status: 'ok' },
+  'infill':   { part: 'base',         status: 'ok' },
 };
 
 function resolvePrintCard(warnId) {
@@ -2034,18 +2041,20 @@ function setPrintState(s) {
 }
 
 document.getElementById('print-run-analysis')?.addEventListener('click', () => setPrintState('analyzed'));
-document.getElementById('print-fix-overhang')?.addEventListener('click', () => resolvePrintCard('overhang'));
-document.getElementById('print-fix-adhesion')?.addEventListener('click', () => resolvePrintCard('adhesion'));
+document.getElementById('print-fix-surface')?.addEventListener('click', () => resolvePrintCard('surface'));
+document.getElementById('print-fix-infill')?.addEventListener('click', () => resolvePrintCard('infill'));
 document.getElementById('print-stale-recompute')?.addEventListener('click', () => setPrintState('analyzed'));
 
-// Print CTA → slicer confirmation
+// Print CTA → in-place grey spinner (persists until mode reset)
 document.getElementById('print-cta').addEventListener('click', () => {
-  document.getElementById('slicer-confirm').classList.add('show');
-  document.getElementById('print-cta').style.display = 'none';
+  const btn = document.getElementById('print-cta');
+  btn.disabled = true;
+  btn.classList.add('cta-loading');
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="animation:spin 1.4s linear infinite;flex-shrink:0;"><circle cx="6.5" cy="6.5" r="5" stroke="#D0D0D0" stroke-width="1.5" stroke-dasharray="8 6" stroke-linecap="round"/></svg> Opening in BambuStudio…';
 });
 
 // Parts / pin interaction
-const PRINT_PART_TO_PIN = { 'magsafe-dock':'overhang','main-pillar':'adhesion' };
+const PRINT_PART_TO_PIN = { 'magsafe-base':'surface','base':'infill' };
 document.querySelectorAll('#print-parts-list .part-row').forEach(row => {
   row.addEventListener('click', e => {
     if (e.target.closest('.part-eye')) {
@@ -2218,6 +2227,8 @@ function initDesign() {
     { key: 'right-arm',     file: 'ChargingStand/parts/RightArm.stl',     visible: false },
   ];
   let designPartsLoaded = 0;
+  const designLoadStart = Date.now();
+  const DESIGN_MIN_LOAD_MS = 3000;
 
   function onDesignPartLoaded() {
     designPartsLoaded++;
@@ -2231,7 +2242,8 @@ function initDesign() {
       bodiesGroup.position.sub(center);
       bodiesGroup.position.y += size.y / 2 - center.y;
       designFitCamera(box);
-      setDesignState('complete');
+      const remaining = DESIGN_MIN_LOAD_MS - (Date.now() - designLoadStart);
+      setTimeout(() => setDesignState('complete'), Math.max(0, remaining));
     }
   }
 
@@ -2473,8 +2485,8 @@ function initPrint() {
   const pinEls = {};
   document.querySelectorAll('#print-pin-layer .warning-pin').forEach(el => { pinEls[el.dataset.warn] = el; });
   const pinAnchors = {
-    overhang: { fx:0.65, fy:0.45, fz:0.55 },
-    adhesion: { fx:0.30, fy:0.95, fz:0.40 },
+    surface: { fx:0.65, fy:0.45, fz:0.55 },
+    infill:  { fx:0.71, fy:0.50, fz:0.24 },
   };
 
   function updatePrintPins() {
